@@ -1,0 +1,14 @@
+*.pbm
+*~
+CMakeFiles
+CMakeCache.txt
+CMakeFiles
+cmake_install.cmake
+Makefile
+*.pdf
+*.pickle
+.navigation.sublime-project
+.navigation.sublime-workspace
+*.out
+*.dat
+*.tar

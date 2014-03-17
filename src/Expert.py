@@ -76,7 +76,7 @@ class Planning(Expert):
 							'theta_node': 0.3,			# Activity threshold for node creation
 							'alpha': 0.7, 				# Decay factor of the goal value
 							'npc': 1681,				# Number of simulated Place cells
-							'sigma_pc': 0.2}				# Place field size
+							'sigma_pc': 0.3 }				# Place field size
 		# Place cells
 		self.pc = np.zeros((self.parameters['npc']))
 		self.pc_position = np.random.uniform(-1,1, (self.parameters['npc'],2))
@@ -91,6 +91,10 @@ class Planning(Expert):
 		distance = np.sqrt((np.power(self.pc_position-position, 2)).sum(1))
 		self.pc = np.exp(-distance/(2*self.parameters['sigma_pc']**2))
 
+	def computeGraphNodeActivity(self):
+		for i in self.nodes.iterkeys(): self.nodes[i] = np.dot(self.pc[self.pc_nodes[i].keys()],self.pc_nodes[i].values())
+		if len(self.nodes.keys()) == 0 or np.max(self.nodes.values()) < self.parameters['theta_node']: self.createNewNode()
+
 	def createNewNode(self):
 		# Store a list of place cells indice
 		# Each indice indicates the position of the place field in the environment
@@ -98,9 +102,6 @@ class Planning(Expert):
 		ind = np.where(self.pc>self.parameters['theta_pc'])[0]		
 		self.pc_nodes[self.nb_nodes]  = dict(izip(ind, self.pc[ind]))
 		self.nodes[self.nb_nodes] = 0.0
-
-	def computeGraphNodeActivity(self):
-		for i in self.nodes.iterkeys(): self.nodes[i] = np.dot(self.pc[self.pc_nodes[i].keys()],self.pc_nodes[i].values())
 
 
 class Exploration(Expert):

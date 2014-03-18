@@ -21,19 +21,31 @@ tax = Taxon()
 tax.computeLandmarkActivity(np.pi, 0.5)
 
 plan = Planning()
-position = np.array([0.2,0.4])
-plan.computePlaceCellActivity(position)
-plan.computeGraphNodeActivity()
-# plan.computePlaceCellActivity([0.0, 0.0])
-# plan.computeGraphNodeActivity()
+position = np.random.uniform(-1,1,2)
+def generatePosition(position):
+	position =+ np.random.normal(0,0.3, 2)
+	position = np.tanh(position)
+	return position
 
 
+tmp = []
+for i in xrange(10):
+	position = generatePosition(position)		
+	plan.computeNextAction(position)
+	tmp.append(position)
 
-plot(position[0], position[1], 'o', c = 'black')
+print plan.edges
+
+tmp = np.array(tmp)
+figure()
+subplot(1,2,1)
+plot(tmp[:,0], tmp[:,1]);xlim(-1,1);ylim(-1,1)
+
+subplot(1,2,2)
 scatter(plan.pc_position[:,0], plan.pc_position[:,1], marker = '+', s = 150, c = plan.pc, cmap = cm.coolwarm)
-a = plan.pc_position[plan.pc_nodes[1].keys()]
-#b = plan.pc_position[plan.pc_nodes[2].keys()]
-plot(a[:,0], a[:,1], 'o', alpha = 0.6)
-# plot(b[:,0], b[:,1], 'o', alpha = 0.6)
+for i in plan.nodes.keys():
+	a = plan.pc_position[plan.pc_nodes[i].keys()]
+	plot(a[:,0], a[:,1], 'o', alpha = 0.8, label = str(i))	
+xlim(-1,1);ylim(-1,1);legend()
 show()
 

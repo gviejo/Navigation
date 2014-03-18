@@ -10,6 +10,7 @@ Copyright (c) 2013 Guillaume VIEJO. All rights reserved.
 
 import numpy as np
 from itertools import izip
+import sys
 
 class Expert(object):
 
@@ -23,6 +24,9 @@ class Expert(object):
 		for i in parameters.keys(): self.setParameter(i, parameters[i])
 
 	def learn(self):
+		pass
+
+	def computeNextAction(self):
 		pass
 
 class Taxon(Expert):
@@ -76,7 +80,7 @@ class Planning(Expert):
 							'theta_node': 0.3,			# Activity threshold for node creation
 							'alpha': 0.7, 				# Decay factor of the goal value
 							'npc': 1681,				# Number of simulated Place cells
-							'sigma_pc': 0.3 }				# Place field size
+							'sigma_pc': 0.2 }				# Place field size
 		# Place cells
 		self.pc = np.zeros((self.parameters['npc']))
 		self.pc_position = np.random.uniform(-1,1, (self.parameters['npc'],2))
@@ -84,24 +88,79 @@ class Planning(Expert):
 		self.nb_nodes = 0
 		self.pc_nodes = dict() #indices : weight for place cells - nodes links
 		self.nodes = dict() # Nodes activity
+		self.current_node = 0 # Current node
+		self.goal_node = 0
+		self.goal_found = False
+		# Planning
+		self.edges = dict({0:[]}) # Links between nodes
+		self.values = dict() # Weight associated to each nodes, should change every time step
 		
-
 	def computePlaceCellActivity(self, position):
 		if np.max(position)>1.0 or np.min(position)<-1.0: raise Warning("Place cells position should be normalized between [-1,1]")
 		distance = np.sqrt((np.power(self.pc_position-position, 2)).sum(1))
 		self.pc = np.exp(-distance/(2*self.parameters['sigma_pc']**2))
 
-	def computeGraphNodeActivity(self):
+	def computeGraphNodeActivity(self):			
 		for i in self.nodes.iterkeys(): self.nodes[i] = np.dot(self.pc[self.pc_nodes[i].keys()],self.pc_nodes[i].values())
-		if len(self.nodes.keys()) == 0 or np.max(self.nodes.values()) < self.parameters['theta_node']: self.createNewNode()
+		if len(self.nodes.keys()) == 0 or np.max(self.nodes.values()) < self.parameters['theta_node']:
+			self.createNewNode()
+		else:
+			self.connectNode()
 
 	def createNewNode(self):
 		# Store a list of place cells indice
 		# Each indice indicates the position of the place field in the environment
 		self.nb_nodes+=1
-		ind = np.where(self.pc>self.parameters['theta_pc'])[0]		
-		self.pc_nodes[self.nb_nodes]  = dict(izip(ind, self.pc[ind]))
-		self.nodes[self.nb_nodes] = 0.0
+		ind = np.where(self.pc>self.parameters['theta_pc'])[0]		# The indices to the place cells
+		self.pc_nodes[self.nb_nodes]  = dict(izip(ind, self.pc[ind]))   	# key : PC ind | values : PC activity
+		self.nodes[self.nb_nodes] = np.dot(self.pc[self.pc_nodes[self.nb_nodes].keys()],self.pc_nodes[self.nb_nodes].values())
+		self.edges[self.nb_nodes] = [self.current_node]
+		self.edges[self.current_node].append(self.nb_nodes)
+		self.values[self.nb_nodes] = 0.0
+		self.current_node = self.nb_nodes
+
+	def connectNode(self):
+		new_node = np.argmax(self.nodes.values())+1
+		if self.current_node not in self.edges[new_node] and new_node != self.current_node:
+			self.edges[new_node].append(self.current_node)
+			self.edges[self.current_node].append(new_node)		
+		self.current_node = new_node
+
+	def isGoalNode(self):
+		# should be used only when reward is found
+		self.goal_found = True
+		for i in self.values.iterkeys(): self.values[i] = 0.0
+		self.values[self.current_node] = 1.0		
+		map(lambda x: self.propagate(x, [self.current_node], self.parameters['alpha']), self.edges[self.current_node])		
+
+	def propagate(self, new_node, visited, value):
+		if self.values[new_node]<value: self.values[new_node] = value
+		visited.append(new_node)				
+		next_node = list(set(self.edges[new_node])-set(visited))
+		if new_node-1:
+		 	map(lambda x: self.propagate(x, visited, self.parameters['alpha']*value), next_node)		
+
+	def computeNextAction(self, position):
+		super(Planning, self).computeNextAction()		
+		self.computePlaceCellActivity(position)
+		self.computeGraphNodeActivity()		
+		if self.goal_found:
+			self.current_node = np.argmax(self.nodes.values())
+			self.goal_node = np.argmax(self.values.values())+1
+			self.path = []
+			self.exploreGraph(self.edges[self.current_node], [self.current_node])			
+		else : 
+		 	print "Do a random action"
+
+	def exploreGraph(self, next_nodes, visited):		
+		next_nodes = list(set(next_nodes)-set(visited))		
+		node = next_nodes[np.argmax([self.values[i] for i in next_nodes])]		
+		visited.append(node)		
+		self.path.append(node)		
+		if node == self.goal_node:
+			return
+		else:
+			self.exploreGraph(self.edges[node], visited)
 
 
 class Exploration(Expert):

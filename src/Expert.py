@@ -27,7 +27,7 @@ class Expert(object):
 		pass
 
 	def computeNextAction(self):
-		pass
+		return np.random.uniform(0,2*np.pi)
 
 class Taxon(Expert):
 
@@ -49,7 +49,7 @@ class Taxon(Expert):
 		self.W = np.random.rand(self.parameters['nac'], self.parameters['nlc'])	
 		# Proposed direction
 		self.actual_direction = 0.0
-		self.direction = 0.0
+		self.direction = 0.0 # The proposed direction
 		# Learning initialization		
 		self.delta = 0.0
 		self.trace = np.zeros((self.parameters['nac'], self.parameters['nlc']))
@@ -72,6 +72,10 @@ class Taxon(Expert):
 		super(Taxon, self).learn()
 		self.delta = reward + self.parameters['gamma']*self.ac.max()-self.ac
 		self.W = self.W+self.parameters['eta']*(np.tile(self.delta, (self.parameters['nlc'],1))).T*self.trace
+
+	def computeNextAction(self):
+		super(Taxon, self).computeNextAction()
+		return self.direction
 	
 class Planning(Expert):
 
@@ -99,6 +103,7 @@ class Planning(Expert):
 		if np.max(position)>1.0 or np.min(position)<-1.0: raise Warning("Place cells position should be normalized between [-1,1]")
 		distance = np.sqrt((np.power(self.pc_position-position, 2)).sum(1))
 		self.pc = np.exp(-distance/(2*self.parameters['sigma_pc']**2))
+		self.computeGraphNodeActivity()	
 
 	def computeGraphNodeActivity(self):			
 		for i in self.nodes.iterkeys(): self.nodes[i] = np.dot(self.pc[self.pc_nodes[i].keys()],self.pc_nodes[i].values())
@@ -140,17 +145,15 @@ class Planning(Expert):
 		if new_node-1:
 		 	map(lambda x: self.propagate(x, visited, self.parameters['alpha']*value), next_node)		
 
-	def computeNextAction(self, position):
-		super(Planning, self).computeNextAction()		
-		self.computePlaceCellActivity(position)
-		self.computeGraphNodeActivity()		
+	def computeNextAction(self):
+		super(Planning, self).computeNextAction()			
 		if self.goal_found:
 			self.current_node = np.argmax(self.nodes.values())
 			self.goal_node = np.argmax(self.values.values())+1
 			self.path = []
 			self.exploreGraph(self.edges[self.current_node], [self.current_node])			
 		else : 
-		 	print "Do a random action"
+		 	return np.random.uniform(0, 2*np.pi)
 
 	def exploreGraph(self, next_nodes, visited):		
 		next_nodes = list(set(next_nodes)-set(visited))		
@@ -166,4 +169,4 @@ class Planning(Expert):
 class Exploration(Expert):
 
 	def __init__(self):
-		pass
+		self.parameters = {}

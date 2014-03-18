@@ -12,13 +12,34 @@ sys.path.append("../src")
 import numpy as np
 from matplotlib import *
 from pylab import *
-from Expert import Taxon, Planning
+from Models import Dolle
+import time
+
+parameters = { 'nlc': 100,		 		    # Number of landmarks cells
+				'sigma_lc': 0.475,			# Normalized landmark width
+				'sigma':0.392,				# Number of action cells
+				'nac': 36,					# Standard deviation of the generalization profile
+				'eta': 0.001,				# Learning rate
+				'lambda': 0.76,				# Eligibility trace decay factor
+				'gamma' : 0.8,
+				'theta_pc': 0.2,			# Activity threshold for place cells node linking
+				'theta_node': 0.3,			# Activity threshold for node creation
+				'alpha': 0.7, 				# Decay factor of the goal value
+				'npc': 1681,				# Number of simulated Place cells
+				'sigma_pc': 0.2,
+				'epsilon': 0.01 }	
 
 
+dolle = Dolle()
+dolle.setAllParameters(parameters)
+position = np.random.rand(2)
+direction = np.random.uniform(0, 2*np.pi)
+distance = np.random.rand()
+dolle.setPosition(position,direction,distance)
+dolle.getAction()
 
-tax = Taxon()
+sys.exit()
 
-tax.computeLandmarkActivity(np.pi, 0.5)
 
 plan = Planning()
 position = np.random.uniform(-1,1,2)

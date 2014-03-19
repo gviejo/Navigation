@@ -106,7 +106,7 @@ class Planning(Expert):
 		self.computeGraphNodeActivity()	
 
 	def computeGraphNodeActivity(self):			
-		for i in self.nodes.iterkeys(): self.nodes[i] = np.dot(self.pc[self.pc_nodes[i].keys()],self.pc_nodes[i].values())
+		for i in self.nodes.iterkeys(): self.nodes[i] = np.dot(self.pc[self.pc_nodes[i].keys()],self.pc_nodes[i].values())		
 		if len(self.nodes.keys()) == 0 or np.max(self.nodes.values()) < self.parameters['theta_node']:
 			self.createNewNode()
 		else:

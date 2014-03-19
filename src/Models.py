@@ -47,21 +47,17 @@ class Dolle(Model):
 		self.w_nodes = dict()
 		self.w_lc = dict()
 		self.trace_lc = dict()
-		self.trace_nodes = dict()
-		self.position = np.array([0.0,-1.0])
-		self.direction = np.random.uniform(0,2*np.pi)
-		self.distance = np.random.rand()
+		self.trace_nodes = dict()		
 		self.psi = lambda x: np.exp(-x**2.)-np.exp(-np.pi/2.)
 		for k in self.k_ex: 
 			self.w_nodes[k] = dict()  # Empty dict for weight between nodes and gate
 			self.w_lc[k] = np.random.uniform(0,0.01, size = (1,self.n_lc)) # array of w for lc and gate
 			self.trace_lc[k] = np.zeros((1,self.n_lc))
-			self.trace_nodes[k] = dict()
-		self.setPosition() # Initialize expert to the current location	
+			self.trace_nodes[k] = dict()		
 
-	def setPosition(self):		
-		self.experts['t'].computeLandmarkActivity(self.direction,self.distance)
-		self.experts['p'].computePlaceCellActivity(self.position)		
+	def setPosition(self, direction, distance, position):		
+		self.experts['t'].computeLandmarkActivity(direction,distance)
+		self.experts['p'].computePlaceCellActivity(position)		
 		if self.n_nodes != len(self.experts['p'].nodes.keys()):
 			self.n_nodes = len(self.experts['p'].nodes.keys())
 			new_nodes = set(self.experts['p'].nodes.keys())-set(self.w_nodes.keys())
@@ -80,21 +76,16 @@ class Dolle(Model):
 		for e in self.k_ex:
 			self.actions[e] = self.experts[e].computeNextAction()
 		self.computeGateValue()
-
-	def computeNewPosition(self):		
-		#self.position += np.random.uniform(-0.5, 0.5, size = 2)		
-		self.position[1] = self.position[1] + 0.1
 		
-	def move(self):
+	def getAction(self):
 		self.retrieveAction()
 		# CHOOSE EXPERTS		
 		self.winner = self.g[np.max(self.g.keys())]
 		self.g_max.append(np.max(self.g.keys()))
 		self.action = self.actions[self.winner]
-		self.computeNewPosition()
-		self.computeGateValue()
-		self.setPosition()
+		self.computeGateValue()		
 		self.updateTrace()
+		return self.action
 
 	def updateTrace(self):
 		l = self.parameters['lambda']

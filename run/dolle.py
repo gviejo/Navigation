@@ -43,7 +43,7 @@ agent = Agent(Dolle(), parameters)
 
 tmp = []
 for i in xrange(20):	
-	tmp.append(list(agent.model.position))
+	tmp.append(list(agent.position))
 	agent.step()
 
 	

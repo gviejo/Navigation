@@ -47,15 +47,15 @@ class Taxon(Expert):
 		self.ac = np.zeros((self.parameters['nac']))
 		# Connection
 		self.W = np.random.rand(self.parameters['nac'], self.parameters['nlc'])	
-		# Proposed direction
-		self.actual_direction = 0.0
+		# Proposed direction		
 		self.direction = 0.0 # The proposed direction
 		# Learning initialization		
 		self.delta = 0.0
 		self.trace = np.zeros((self.parameters['nac'], self.parameters['nlc']))
 
-	def computeLandmarkActivity(self, direction, distance):
-		self.actual_direction = float(direction)
+	def computeLandmarkActivity(self, direction, distance):		
+		print direction
+		print distance
 		self.lc = np.exp(-(np.power((float(direction)-self.lc_direction),2))/(2*(self.parameters['sigma_lc']/float(distance))**2))
 		self.computeActionActivity()
 

@@ -39,27 +39,47 @@ parameters = { 'nlc': 100,		 		    # Number of landmarks cells
 
 
 agent = Agent(Dolle(), parameters)
-
-
-tmp = []
-for i in xrange(20):	
-	tmp.append(list(agent.position))
+agent.landmark_position = np.array([-0.5, 0.5])
+agent.position = np.array([0.5, 0.0])
+agent.direction = np.pi/4.
+agent.update()
+position = []
+distance = []
+direction = []
+for i in xrange(9):	
+	position.append(list(agent.position))	
+	distance.append(agent.distance)
+	direction.append([agent.agent_direction, agent.landmark_direction])
+	agent.action = np.pi/4.
 	agent.step()
 
 	
 
 
 
-tmp = np.array(tmp)
+position = np.array(position)
+direction = np.array(direction)
 figure()
-subplot(1,2,1)
-plot(tmp[:,0], tmp[:,1]);xlim(-1,1);ylim(-1,1)
+subplot(3,2,1)
+plot(position[:,0], position[:,1]);xlim(-1,1);ylim(-1,1)
+scatter(agent.landmark_position[0], agent.landmark_position[1])
 
-subplot(1,2,2)
+subplot(3,2,2)
 scatter(agent.model.experts['p'].pc_position[:,0], agent.model.experts['p'].pc_position[:,1], marker = '+', s = 150, c = agent.model.experts['p'].pc, cmap = cm.coolwarm)
 for i in agent.model.experts['p'].nodes.keys():
 	a = agent.model.experts['p'].pc_position[agent.model.experts['p'].pc_nodes[i].keys()]
 	plot(a[:,0], a[:,1], 'o', alpha = 0.8, label = str(i))	
 xlim(-1,1);ylim(-1,1);legend()
+
+subplot(3,1,2)
+plot(np.array(distance), 'o-')
+title("Distance to landmark")
+
+subplot(3,1,3)
+#plot(direction[:,0], 'o-', label = 'agent')
+plot(direction[:,1], 'o-', label = 'mark')
+legend()
+title("Direction of the agent")
+
 show()
 

@@ -34,15 +34,17 @@ class Agent(object):
 
 
 
-	def update(self):
+	def update(self):		
 		self.agent_direction = self.agent_direction+self.action
+		print self.agent_direction, self.landmark_direction
 		if self.agent_direction>=2*np.pi: self.agent_direction -= 2*np.pi 		
 		self.position[0] += self.d * np.cos(self.agent_direction)
 		self.position[1] += self.d * np.sin(self.agent_direction)
 		self.distance = np.sqrt(np.sum(np.power(self.position-self.landmark_position, 2)))
 		self.landmark_direction = np.cosh((self.position[0]-self.landmark_position[0])/self.distance)
-
-		#self.direction = self.agent_direction - self.landmark_direction
+		tmp1 = np.cos(self.agent_direction) * self.distance * np.cos(self.landmark_direction)
+		tmp2 = np.sin(self.agent_direction) * self.distance * np.sin(self.landmark_direction)
+		self.direction = np.cosh( (tmp1 + tmp2)/float(self.distance))
 
 
 	def step(self):

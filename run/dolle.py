@@ -39,18 +39,22 @@ parameters = { 'nlc': 100,		 		    # Number of landmarks cells
 
 
 agent = Agent(Dolle(), parameters)
-agent.landmark_position = np.array([-0.5, 0.5])
-agent.position = np.array([0.4, 0.0])
-agent.direction = np.pi/4.
+agent.landmark_position = np.array([0.5, 0.5])
+agent.position = np.array([0.0, -0.5])
+#agent.agent_direction = 3*np.pi/4.
+agent.agent_direction = np.pi/2.
+#agent.agent_direction = 0.0
+#agent.agent_direction = np.pi/4.
 agent.update()
 position = []
 distance = []
 direction = []
-for i in xrange(4):	
+for i in xrange(10):	
 	position.append(list(agent.position))	
 	distance.append(agent.distance)
 	direction.append(agent.direction)
-	agent.action = np.pi/4.
+	#agent.action = np.pi/4.
+	agent.action = 0.0
 	agent.step()
 
 	
@@ -63,7 +67,7 @@ distance = np.array(distance)
 
 figure()
 subplot(3,2,1)
-plot(position[:,0], position[:,1]);xlim(-1,1);ylim(-1,1)
+plot(position[:,0], position[:,1], '.-');xlim(-1,1);ylim(-1,1)
 scatter(agent.landmark_position[0], agent.landmark_position[1])
 
 subplot(3,2,2)
@@ -80,7 +84,7 @@ title("Distance to landmark")
 subplot(3,1,3)
 plot(direction, 'o-')
 
-legend()
+
 title("Direction of the landmark")
 
 show()

@@ -14,14 +14,8 @@ from matplotlib import *
 from pylab import *
 from Models import Dolle
 from setup import *
+from time import time
 
-
-
-
-def generatePosition(position):
-	position += np.random.normal(0,0.3, 2)
-	position = np.tanh(position)
-	return position
 
 parameters = { 'nlc': 100,		 		    # Number of landmarks cells
 				'sigma_lc': 0.475,			# Normalized landmark width
@@ -38,54 +32,56 @@ parameters = { 'nlc': 100,		 		    # Number of landmarks cells
 				'epsilon': 0.01 }	
 
 
-agent = Agent(Dolle(), parameters)
+agent = Agent(Dolle(parameters), parameters, stats = True)
+
+agent.agent_direction = np.pi/2.
 agent.landmark_position = np.array([-0.5, 0.5])
 agent.position = np.array([0.0, -0.5])
-#agent.agent_direction = 3*np.pi/4.
-agent.agent_direction = np.pi/2.
-#agent.agent_direction = 0.0
-#agent.agent_direction = np.pi/4.
-agent.update()
-position = []
-distance = []
-direction = []
-for i in xrange(10):	
-	position.append(list(agent.position))	
-	distance.append(agent.distance)
-	direction.append(agent.direction)
-	#agent.action = np.pi/4.
-	agent.action = 0.0
-	agent.step()
 
-	
+
+t1 = time()
+for i in xrange(10):
+	agent.step()	
+t2 = time()
+
+print "\n"
+print t2-t1
 
 
 
-position = np.array(position)
-direction = np.array(direction)
-distance = np.array(distance)
+position = np.array(agent.positions)
+direction = np.array(agent.directions)
+distance = np.array(agent.distances)
 
-figure()
-subplot(3,2,1)
+figure(figsize = (17, 11))
+
+subplot2grid((3,3),(0,0), colspan = 1)
 plot(position[:,0], position[:,1], '.-');xlim(-1,1);ylim(-1,1)
-scatter(agent.landmark_position[0], agent.landmark_position[1])
+scatter(agent.landmark_position[0], agent.landmark_position[1], s = 100, c = 'red')
 
-subplot(3,2,2)
-scatter(agent.model.experts['p'].pc_position[:,0], agent.model.experts['p'].pc_position[:,1], marker = '+', s = 150, c = agent.model.experts['p'].pc, cmap = cm.coolwarm)
-for i in agent.model.experts['p'].nodes.keys():
-	a = agent.model.experts['p'].pc_position[agent.model.experts['p'].pc_nodes[i].keys()]
-	plot(a[:,0], a[:,1], 'o', alpha = 0.8, label = str(i))	
-xlim(-1,1);ylim(-1,1);legend()
+subplot2grid((3,3),(1,0), colspan = 1)
+#scatter(agent.model.experts['p'].pc_position[:,0], agent.model.experts['p'].pc_position[:,1], marker = '+', s = 150, c = agent.model.experts['p'].pc, cmap = cm.coolwarm)
+#for i in agent.model.experts['p'].nodes.keys():#
+#	a = agent.model.experts['p'].pc_position[agent.model.experts['p'].pc_nodes[i].keys()]
+#	plot(a[:,0], a[:,1], 'o', alpha = 0.8)	
+#xlim(-1,1);ylim(-1,1)
 
-subplot(3,1,2)
-plot(distance, 'o-')
-title("Distance to landmark")
+subplot2grid((3,3),(0,1), colspan = 2)
+plot(distance, 'o-', label = "Distance to landmark")
+legend()
 
-subplot(3,1,3)
-plot(direction, 'o-')
+subplot2grid((3,3),(1,1), colspan = 2)
+[plot(agent.gates[k], 'o-', color = agent.colors[k], alpha = 0.9) for k in agent.gates.keys()]
+line = [Line2D(range(1),range(1), marker = 'o', alpha =1.0, color = agent.colors[e], label = str(e)) for e in agent.colors.keys()]
+legend(line, tuple(agent.colors.keys()))
+xlim(0,len(agent.actions))
+#ylim(0, 2*np.pi)
 
-
-title("Direction of the landmark")
-
+subplot2grid((3,3),(2,1), colspan = 2)
+#plot(agent.actions)
+#plot(agent.model.experts['t'].lcs, 'o-', label = 'LC')
+plot(agent.model.experts['t'].ldirec, 'o-', label = 'direction')
+legend()
+#ylim(0, parameters['nlc'])
 show()
 

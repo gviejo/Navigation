@@ -18,9 +18,10 @@ class Expert(object):
 		self.parameters = dict()
 
 	def setParameter(self, name, value):
-		if name in self.parameters.keys() : self.parameters[name] = value
+		if name in self.parameters.keys() : 			
+			self.parameters[name] = value
 
-	def setAllParameters(self, parameters):
+	def setAllParameters(self, parameters):		
 		for i in parameters.keys(): self.setParameter(i, parameters[i])
 
 	def learn(self):
@@ -31,7 +32,7 @@ class Expert(object):
 
 class Taxon(Expert):
 
-	def __init__(self):
+	def __init__(self, parameters):
 		self.parameters = { 'nlc': 100,		 		    # Number of landmarks cells
 							'sigma_lc': 0.475,			# Normalized landmark width
 							'sigma':0.392,				# Number of action cells
@@ -39,6 +40,7 @@ class Taxon(Expert):
 							'eta': 0.001,				# Learning rate
 							'lambda': 0.76,				# Eligibility trace decay factor
 							'gamma' : 0.8 }				# Discount factor
+		self.setAllParameters(parameters)							
 		# Landmarks cells
 		self.lc_direction = (np.arange(self.parameters['nlc'])*2.0*np.pi)/float(self.parameters['nlc'])
 		self.lc = np.zeros((self.parameters['nlc']))
@@ -46,18 +48,24 @@ class Taxon(Expert):
 		self.ac_direction = (np.arange(self.parameters['nac'])*2.0*np.pi)/float(self.parameters['nac'])
 		self.ac = np.zeros((self.parameters['nac']))
 		# Connection
-		self.W = np.random.rand(self.parameters['nac'], self.parameters['nlc'])	
+		#self.W = np.random.rand(self.parameters['nac'], self.parameters['nlc'])	
+		self.W = np.ones((self.parameters['nac'], self.parameters['nlc']))
 		# Proposed direction		
 		self.direction = 0.0 # The proposed direction
 		# Learning initialization		
 		self.delta = 0.0
 		self.trace = np.zeros((self.parameters['nac'], self.parameters['nlc']))
+		# TO REMOVE AFTER
+		self.lcs = list()
+		self.ldirec = list()
 
-	def computeLandmarkActivity(self, direction, distance):		
-		print direction
-		print distance
+	def setCellInput(self, direction, distance, position):		
 		self.lc = np.exp(-(np.power((float(direction)-self.lc_direction),2))/(2*(self.parameters['sigma_lc']/float(distance))**2))
-		self.computeActionActivity()
+		self.computeActionActivity()		
+		## TO REMOVE
+		self.lcs.append(np.argmax(self.lc))
+		self.ldirec.append(self.direction)
+		###
 
 	def computeActionActivity(self):
 		self.ac = np.dot(self.W, self.lc)		
@@ -79,12 +87,13 @@ class Taxon(Expert):
 	
 class Planning(Expert):
 
-	def __init__(self):
+	def __init__(self, parameters):
 		self.parameters = { 'theta_pc': 0.2,			# Activity threshold for place cells node linking
 							'theta_node': 0.3,			# Activity threshold for node creation
 							'alpha': 0.7, 				# Decay factor of the goal value
 							'npc': 1681,				# Number of simulated Place cells
 							'sigma_pc': 0.2 }				# Place field size
+		self.setAllParameters(parameters)
 		# Place cells
 		self.pc = np.zeros((self.parameters['npc']))
 		self.pc_position = np.random.uniform(-1,1, (self.parameters['npc'],2))
@@ -99,7 +108,7 @@ class Planning(Expert):
 		self.edges = dict({0:[]}) # Links between nodes
 		self.values = dict() # Weight associated to each nodes, should change every time step
 		
-	def computePlaceCellActivity(self, position):
+	def setCellInput(self, direction, distance, position):
 		if np.max(position)>1.0 or np.min(position)<-1.0: raise Warning("Place cells position should be normalized between [-1,1]")
 		distance = np.sqrt((np.power(self.pc_position-position, 2)).sum(1))
 		self.pc = np.exp(-distance/(2*self.parameters['sigma_pc']**2))

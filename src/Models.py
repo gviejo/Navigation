@@ -13,38 +13,41 @@ import sys
 
 class Model(object):
 
-	def __init__(self):
-		self.parameters = dict()
+	def __init__(self, parameters = dict()):
+		self.parameters = parameters
 
 	def setParameter(self, name, value):
 		if name in self.parameters.keys() : self.parameters[name] = value
 
 	def setAllParameters(self, parameters):
-		for i in parameters.keys(): self.setParameter(i, parameters[i])
-		map(lambda x: x.setAllParameters(parameters), self.experts.values())
+		for i in parameters.keys(): self.setParameter(i, parameters[i])		
 
 	def retrieveAction(self):
 		pass
 
 class Dolle(Model):
 
-	def __init__(self):
+	def __init__(self, parameters):
 		self.parameters = {	'epsilon': 0.01,
 							'gamma': 0.8,
-							'lambda': 0.76 }		
-		self.experts = { 't':Taxon(), 
-						'p':Planning(),
-						'e':Exploration()}
+							'lambda': 0.76,
+							'nlc':100 }		
+		self.setAllParameters(parameters)
+		self.experts = {
+						't':Taxon(parameters), 
+						#'p':Planning(parameters),
+						#'e':Exploration(parameters)
+						}
 		self.n_ex = len(self.experts.keys()) # Number of experts
 		self.k_ex = self.experts.keys() # Keys of experts | faster to declare here
-		self.n_lc = self.experts['t'].parameters['nlc'] # NUmber of landmarks cells
-		self.n_nodes = len(self.experts['p'].nodes.keys()) # Number of nodes | not constant
+		self.n_lc = self.parameters['nlc'] # NUmber of landmarks cells		
+		self.n_nodes = 0 # Number of nodes | not constant
 		self.actions = dict.fromkeys(self.experts.keys()) # Proposed action from each expert
 		self.action = None
-		self.g = dict()
-		self.g_max = []
-		self.winner = None		
-		self.w_nodes = dict()
+		self.g = dict() # Gate value
+		self.g_max = [] # Maximum value
+		self.winner = None # Winner expert 
+		self.w_nodes = dict() 
 		self.w_lc = dict()
 		self.trace_lc = dict()
 		self.trace_nodes = dict()		
@@ -55,16 +58,16 @@ class Dolle(Model):
 			self.trace_lc[k] = np.zeros((1,self.n_lc))
 			self.trace_nodes[k] = dict()		
 
-	def setPosition(self, direction, distance, position):		
-		self.experts['t'].computeLandmarkActivity(direction,distance)
-		self.experts['p'].computePlaceCellActivity(position)		
-		if self.n_nodes != len(self.experts['p'].nodes.keys()):
+	def setPosition(self, direction, distance, position):	
+		for k in self.k_ex:
+			self.experts[k].setCellInput(direction, distance, position)			
+		if 'p' in self.k_ex and self.n_nodes != len(self.experts['p'].nodes.keys()):
 			self.n_nodes = len(self.experts['p'].nodes.keys())
 			new_nodes = set(self.experts['p'].nodes.keys())-set(self.w_nodes.keys())
 			for e in self.k_ex: 
 				self.w_nodes[e].update(izip(new_nodes,np.random.uniform(0,0.01,size=len(new_nodes))))			
 				self.trace_nodes[e].update(izip(new_nodes,np.zeros(len(new_nodes))))
-	
+
 	def computeGateValue(self):
 		self.g = dict()
 		for e in self.k_ex:
@@ -79,7 +82,7 @@ class Dolle(Model):
 		
 	def getAction(self):
 		self.retrieveAction()
-		# CHOOSE EXPERTS		
+		# CHOOSE EXPERTS				
 		self.winner = self.g[np.max(self.g.keys())]
 		self.g_max.append(np.max(self.g.keys()))
 		self.action = self.actions[self.winner]

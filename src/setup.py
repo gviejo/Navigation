@@ -39,9 +39,12 @@ class Agent(object):
 		self.position[0] += self.d * np.cos(self.agent_direction)
 		self.position[1] += self.d * np.sin(self.agent_direction)
 		self.distance = np.sqrt(np.sum(np.power(self.position-self.landmark_position, 2)))
-		tmp1 = np.cos(self.agent_direction) * (self.landmark_position[0]-self.position[0])
-		tmp2 = np.sin(self.agent_direction) * (self.landmark_position[1]-self.position[1])
-		self.direction = np.arccos((tmp1 + tmp2)/self.distance)
+		#tmp1 = np.cos(self.agent_direction) * (self.landmark_position[0]-self.position[0])
+		#tmp2 = np.sin(self.agent_direction) * (self.landmark_position[1]-self.position[1])
+		#self.direction = np.arccos((tmp1 + tmp2)/self.distance)
+		l_coord = self.landmark_position-self.position
+		a_coord = [np.cos(self.agent_direction), np.sin(self.agent_direction)]
+		self.direction = (np.arctan2(l_coord[1], l_coord[0])-np.arctan2(a_coord[1], a_coord[0]))+2*np.pi
 
 	def step(self):
 		self.update()

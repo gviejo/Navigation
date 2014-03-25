@@ -39,7 +39,7 @@ parameters = { 'nlc': 100,		 		    # Number of landmarks cells
 
 
 agent = Agent(Dolle(), parameters)
-agent.landmark_position = np.array([0.5, 0.5])
+agent.landmark_position = np.array([-0.5, 0.5])
 agent.position = np.array([0.0, -0.5])
 #agent.agent_direction = 3*np.pi/4.
 agent.agent_direction = np.pi/2.

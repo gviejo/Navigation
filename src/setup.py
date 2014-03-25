@@ -25,8 +25,8 @@ class Agent(object):
 		self.agent_direction = 0 # Relative to a allocentric coordinate from the agent
 		self.landmark_position = np.random.uniform(-1,1,2)	# Relative to a allocentric coordinate from the environnment
 		self.direction = np.random.uniform(0,2*np.pi) # Angle between agent direction and landmark direction
-		self.distance = 0  # Distance between the agent and the landmark relative to a allocentric coordinate from the environnment
 		self.position = np.random.uniform(-1,1,2) # Relative to a allocentric coordinate from the environnment
+		self.distance = np.sqrt(np.sum(np.power(self.position-self.landmark_position, 2))) # Distance between the agent and the landmark relative to a allocentric coordinate from the environnment
 		self.action = 0.0
 		self.d = 0.1
 		self.stats = stats
@@ -61,16 +61,17 @@ class Agent(object):
 		self.position[self.position<-1.0] = -1.0
 
 	def update(self):		
-		#self.agent_direction = self.agent_direction+self.action		
+		self.agent_direction = self.agent_direction+self.action		
 		if self.agent_direction>=2*np.pi: self.agent_direction -= 2*np.pi 		
 		self.computePosition()
 		self.distance = np.sqrt(np.sum(np.power(self.position-self.landmark_position, 2)))
 		self.computeDirection()		
 
-	def step(self):
-		self.update()
+	def step(self):		
 		self.model.setPosition(self.direction, self.distance, self.position)
 		self.action = self.model.getAction()
+		self.update()
+		
 		
 		if self.stats:
 			self.getStats()

@@ -68,8 +68,11 @@ class Taxon(Expert):
 		###
 
 	def computeActionActivity(self):
-		self.ac = np.dot(self.W, self.lc)		
-		self.direction = np.arctan((self.ac*np.sin(self.ac_direction)).sum()/(self.ac*np.cos(self.ac_direction)).sum())
+		self.ac = np.dot(self.W, self.lc)
+		xy = [(self.ac*np.sin(self.ac_direction)).sum(), (self.ac*np.cos(self.ac_direction)).sum()]
+		#self.direction = np.arctan((self.ac*np.sin(self.ac_direction)).sum()/(self.ac*np.cos(self.ac_direction)).sum())
+		self.direction = np.arctan2(xy[0], xy[1])
+		if self.direction<0.0: self.direction = 2*np.pi-np.abs(self.direction)
 		self.updateTrace()
 
 	def updateTrace(self):

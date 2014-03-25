@@ -35,9 +35,9 @@ parameters = { 'nlc': 100,		 		    # Number of landmarks cells
 agent = Agent(Dolle(parameters), parameters, stats = True)
 
 agent.agent_direction = np.pi/2.
-agent.landmark_position = np.array([-0.5, 0.5])
+agent.landmark_position = np.array([0.5, 0.5])
 agent.position = np.array([0.0, -0.5])
-
+agent.distance = np.sqrt(np.sum(np.power(agent.position-agent.landmark_position, 2)))
 
 t1 = time()
 for i in xrange(10):

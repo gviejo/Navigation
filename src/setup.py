@@ -18,17 +18,18 @@ from Models import *
 
 class Agent(object):
 
-	def __init__(self, model, parameters, stats = False):
+	def __init__(self, model, world, parameters, stats = False):
 		self.model = model
+		self.world = world
 		self.parameters = parameters
 		self.model.setAllParameters(self.parameters)
-		self.agent_direction = 0 # Relative to a allocentric coordinate from the agent
-		self.landmark_position = np.random.uniform(-1,1,2)	# Relative to a allocentric coordinate from the environnment
-		self.direction = np.random.uniform(0,2*np.pi) # Angle between agent direction and landmark direction
-		self.position = np.random.uniform(-1,1,2) # Relative to a allocentric coordinate from the environnment
+		self.agent_direction = self.world.start_direction # Relative to a allocentric coordinate from the agent
+		self.landmark_position = self.world.landmark_position # Relative to a allocentric coordinate from the environnment		
+		self.position = self.world.start_position # Relative to a allocentric coordinate from the environnment
 		self.distance = np.sqrt(np.sum(np.power(self.position-self.landmark_position, 2))) # Distance between the agent and the landmark relative to a allocentric coordinate from the environnment
+		self.computeDirection() # Angle between agent direction and landmark direction		
 		self.action = 0.0
-		self.d = 0.1
+		self.d = 0.06
 		self.stats = stats
 		if self.stats:
 			self.colors = dict({'t':(1.0, 0.0, 0.0),'e':(0.0, 0.0, 1.0),'p':(0.0, 1.0, 0.0)})
@@ -42,14 +43,11 @@ class Agent(object):
 	def computeDirection(self):
 		"""Counter clockwise angle is computed in an allocentric coordinate 
 		centered on the agent. Angle betwen the direction of the agent and 
-		the direction of the landmark"""
+		the direction of the landmark in the interval [-pi, pi]"""
 		landmark_coordinate = self.landmark_position-self.position
 		landmark_angle = np.arctan2(landmark_coordinate[1], landmark_coordinate[0])
-		agent_angle = np.arctan2(np.sin(self.agent_direction), np.cos(self.agent_direction))
-		if agent_angle <= landmark_angle:
-			self.direction = np.abs(landmark_angle-agent_angle)
-		else:
-			self.direction = 2*np.pi - np.abs(landmark_angle-agent_angle)
+		#agent_angle = np.arctan2(np.sin(self.agent_direction), np.cos(self.agent_direction))
+		self.direction = landmark_angle-self.agent_direction
 
 	def computePosition(self):
 		""" New position of the agent in the allocentric coordinate of the 
@@ -60,9 +58,11 @@ class Agent(object):
 		self.position[self.position>1.0] = 1.0
 		self.position[self.position<-1.0] = -1.0
 
-	def update(self):		
+	def update(self):
+		""" Action should be in range [-pi, pi]"""
 		self.agent_direction = self.agent_direction+self.action		
-		if self.agent_direction>=2*np.pi: self.agent_direction -= 2*np.pi 		
+		if self.agent_direction<=-np.pi: self.agent_direction = 2*np.pi - np.abs(self.agent_direction)
+		if self.agent_direction>np.pi: self.agent_direction = self.agent_direction - 2*np.pi
 		self.computePosition()
 		self.distance = np.sqrt(np.sum(np.power(self.position-self.landmark_position, 2)))
 		self.computeDirection()		
@@ -71,8 +71,7 @@ class Agent(object):
 		self.model.setPosition(self.direction, self.distance, self.position)
 		self.action = self.model.getAction()
 		self.update()
-		
-		
+				
 		if self.stats:
 			self.getStats()
 
@@ -83,3 +82,13 @@ class Agent(object):
 		self.experts.append(self.colors[self.model.winner])
 		self.actions.append(self.action)		
 		for k in self.model.k_ex: self.gates[k].append(dict(zip(self.model.g.values(),self.model.g.keys()))[k])
+
+
+class World(object):
+
+	def __init__(self):		
+		self.landmark_position = np.array([0., 0.5])
+		self.start_position = np.array([0.0, 0.])
+		self.start_direction = np.pi/2.
+
+	

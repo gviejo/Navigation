@@ -18,7 +18,7 @@ from time import time
 
 
 parameters = { 'nlc': 100,		 		    # Number of landmarks cells
-				'sigma_lc': 0.475,			# Normalized landmark width
+				'sigma_lc': 0.1,			# Normalized landmark width
 				'sigma':0.392,				# Number of action cells
 				'nac': 36,					# Standard deviation of the generalization profile
 				'eta': 0.001,				# Learning rate
@@ -32,15 +32,11 @@ parameters = { 'nlc': 100,		 		    # Number of landmarks cells
 				'epsilon': 0.01 }	
 
 
-agent = Agent(Dolle(parameters), parameters, stats = True)
+agent = Agent(Dolle(parameters), World(), parameters, stats = True)
 
-agent.agent_direction = np.pi/2.
-agent.landmark_position = np.array([0.5, 0.5])
-agent.position = np.array([0.0, -0.5])
-agent.distance = np.sqrt(np.sum(np.power(agent.position-agent.landmark_position, 2)))
 
 t1 = time()
-for i in xrange(10):
+for i in xrange(100):
 	agent.step()	
 t2 = time()
 
@@ -52,6 +48,8 @@ print t2-t1
 position = np.array(agent.positions)
 direction = np.array(agent.directions)
 distance = np.array(agent.distances)
+lcs = np.array(agent.model.experts['t'].lcs).T
+lac = np.array(agent.model.experts['t'].lac).T
 
 figure(figsize = (17, 11))
 
@@ -79,8 +77,10 @@ xlim(0,len(agent.actions))
 
 subplot2grid((3,3),(2,1), colspan = 2)
 #plot(agent.actions)
-#plot(agent.model.experts['t'].lcs, 'o-', label = 'LC')
-plot(agent.model.experts['t'].ldirec, 'o-', label = 'direction')
+#[plot(agent.model.experts['t'].lc_direction, lcs[:,i]) for i in xrange(lcs.shape[1])]
+plot(lac)
+#plot(agent.model.experts['t'].ldirec, 'o-', label = 'direction')
+#plot(direction)
 legend()
 #ylim(0, parameters['nlc'])
 show()

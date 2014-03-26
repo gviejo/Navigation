@@ -42,51 +42,57 @@ class Taxon(Expert):
 							'gamma' : 0.8 }				# Discount factor
 		self.setAllParameters(parameters)							
 		# Landmarks cells
-		self.lc_direction = (np.arange(self.parameters['nlc'])*2.0*np.pi)/float(self.parameters['nlc'])
+		self.lc_direction = np.arange(-np.pi, np.pi, (2*np.pi)/float(self.parameters['nlc']))
 		self.lc = np.zeros((self.parameters['nlc']))
 		# Action cells
-		self.ac_direction = (np.arange(self.parameters['nac'])*2.0*np.pi)/float(self.parameters['nac'])
+		self.ac_direction = np.arange(-np.pi, np.pi, (2*np.pi)/float(self.parameters['nac']))
 		self.ac = np.zeros((self.parameters['nac']))
 		# Connection
-		#self.W = np.random.rand(self.parameters['nac'], self.parameters['nlc'])	
-		self.W = np.ones((self.parameters['nac'], self.parameters['nlc']))
+		self.W = np.random.rand(self.parameters['nac'], self.parameters['nlc'])	
 		# Proposed direction		
-		self.direction = 0.0 # The proposed direction
+		self.action = 0.0 # The proposed direction
 		# Learning initialization		
 		self.delta = 0.0
 		self.trace = np.zeros((self.parameters['nac'], self.parameters['nlc']))
 		# TO REMOVE AFTER
 		self.lcs = list()
 		self.ldirec = list()
+		self.lac = list()
 
-	def setCellInput(self, direction, distance, position):		
-		self.lc = np.exp(-(np.power((float(direction)-self.lc_direction),2))/(2*(self.parameters['sigma_lc']/float(distance))**2))
+	def setCellInput(self, direction, distance, position):
+		""" Direction should be in [-pi, pi] interval 
+		Null angle is the curent direction of the agent"""
+		delta = np.arccos(np.cos(direction)*np.cos(self.lc_direction)+np.sin(direction)*np.sin(self.lc_direction))		
+		self.lc = np.exp(-(np.power(delta,2))/(2*(self.parameters['sigma_lc']/float(distance))**2))
 		self.computeActionActivity()		
 		## TO REMOVE
-		self.lcs.append(np.argmax(self.lc))
-		self.ldirec.append(self.direction)
-		###
+		self.lcs.append(self.lc)
+		self.ldirec.append(self.action)
+		############
 
-	def computeActionActivity(self):
+	def computeActionActivity(self):		
 		self.ac = np.dot(self.W, self.lc)
 		xy = [(self.ac*np.sin(self.ac_direction)).sum(), (self.ac*np.cos(self.ac_direction)).sum()]
-		#self.direction = np.arctan((self.ac*np.sin(self.ac_direction)).sum()/(self.ac*np.cos(self.ac_direction)).sum())
-		self.direction = np.arctan2(xy[0], xy[1])
-		if self.direction<0.0: self.direction = 2*np.pi-np.abs(self.direction)
-		self.updateTrace()
+		#self.action = np.arctan((self.ac*np.sin(self.ac_direction)).sum()/(self.ac*np.cos(self.ac_direction)).sum())
+		self.action = np.arctan2(xy[0], xy[1])		
+		## TO REMOVE
+		self.lac.append(self.ac)
+		##############
 
-	def updateTrace(self):
-		ac = np.exp(-(np.power((self.direction-self.ac_direction),2))/(2*self.parameters['sigma']**2))
+	def updateTrace(self, action):
+		delta = np.arccos(np.cos(action)*np.cos(self.ac_direction)+np.sin(action)*np.sin(self.ac_direction))
+		ac = np.exp(-(np.power(delta,2))/(2*self.parameters['sigma']**2))
 		self.trace = self.parameters['lambda']*self.trace+np.outer(ac, self.lc)
 
-	def learn(self, reward):
+	def learn(self, action, reward):
 		super(Taxon, self).learn()
+		self.updateTrace(action)
 		self.delta = reward + self.parameters['gamma']*self.ac.max()-self.ac
 		self.W = self.W+self.parameters['eta']*(np.tile(self.delta, (self.parameters['nlc'],1))).T*self.trace
 
 	def computeNextAction(self):
 		super(Taxon, self).computeNextAction()
-		return self.direction
+		return self.action
 	
 class Planning(Expert):
 

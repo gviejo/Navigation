@@ -35,6 +35,8 @@ class Taxon(Expert):
 	def __init__(self, parameters):
 		self.parameters = { 'nlc': 100,		 		    # Number of landmarks cells
 							'sigma_lc': 0.475,			# Normalized landmark width
+							'sigma_vc': 0.001, 			# Visual cell width
+							'w_vc': 0.1, 				# Weight of visual cells
 							'sigma':0.392,				# Number of action cells
 							'nac': 36,					# Standard deviation of the generalization profile
 							'eta': 0.001,				# Learning rate
@@ -44,13 +46,18 @@ class Taxon(Expert):
 		# Landmarks cells
 		self.lc_direction = np.arange(-np.pi, np.pi, (2*np.pi)/float(self.parameters['nlc']))
 		self.lc = np.zeros((self.parameters['nlc']))
+		# Visual cells
+		self.vc_direction = np.arange(-np.pi, np.pi, (2*np.pi)/float(self.parameters['nac']))
+		self.vc = np.zeros((self.parameters['nac']))
 		# Action cells
 		self.ac_direction = np.arange(-np.pi, np.pi, (2*np.pi)/float(self.parameters['nac']))
 		self.ac = np.zeros((self.parameters['nac']))
 		# Connection
-		self.W = np.random.rand(self.parameters['nac'], self.parameters['nlc'])	
+		self.W = np.random.normal(0.0, 0.1, size=(self.parameters['nac'], self.parameters['nlc']))
+		self.U = np.ones(self.parameters['nac'])*self.parameters['w_vc']
 		# Proposed direction		
 		self.action = 0.0 # The proposed direction
+		self.norm = 0.0 # The distance if action is choosen
 		# Learning initialization		
 		self.delta = 0.0
 		self.trace = np.zeros((self.parameters['nac'], self.parameters['nlc']))
@@ -58,23 +65,31 @@ class Taxon(Expert):
 		self.lcs = list()
 		self.ldirec = list()
 		self.lac = list()
+		self.lvc = list()
+		self.ldelta = list()
 
-	def setCellInput(self, direction, distance, position):
+	def setCellInput(self, direction, distance, position, wall):
 		""" Direction should be in [-pi, pi] interval 
 		Null angle is the curent direction of the agent"""
 		delta = np.arccos(np.cos(direction)*np.cos(self.lc_direction)+np.sin(direction)*np.sin(self.lc_direction))		
 		self.lc = np.exp(-(np.power(delta,2))/(2*(self.parameters['sigma_lc']/float(distance))**2))
+		delta = np.arccos(np.cos(wall[0])*np.cos(self.vc_direction)+np.sin(wall[0])*np.sin(self.vc_direction))
+		print wall
+		self.vc = np.exp(-(np.power(delta, 2))/(2*(self.parameters['sigma_vc']/float(wall[1]+0.00001))**2))
 		self.computeActionActivity()		
 		## TO REMOVE
 		self.lcs.append(self.lc)
 		self.ldirec.append(self.action)
+		self.lvc.append(self.vc)
 		############
 
 	def computeActionActivity(self):		
-		self.ac = np.dot(self.W, self.lc)
+		self.ac = np.dot(self.W, self.lc) - self.vc
+		self.ac = np.tanh(self.ac)
 		xy = [(self.ac*np.sin(self.ac_direction)).sum(), (self.ac*np.cos(self.ac_direction)).sum()]
 		#self.action = np.arctan((self.ac*np.sin(self.ac_direction)).sum()/(self.ac*np.cos(self.ac_direction)).sum())
-		self.action = np.arctan2(xy[0], xy[1])		
+		self.action = np.arctan2(xy[0], xy[1])
+		self.norm = np.sqrt(np.sum(np.power(xy, 2)))
 		## TO REMOVE
 		self.lac.append(self.ac)
 		##############
@@ -85,14 +100,17 @@ class Taxon(Expert):
 		self.trace = self.parameters['lambda']*self.trace+np.outer(ac, self.lc)
 
 	def learn(self, action, reward):
+		""" Action performed selected from a mixture of experts"""
 		super(Taxon, self).learn()
 		self.updateTrace(action)
 		self.delta = reward + self.parameters['gamma']*self.ac.max()-self.ac
 		self.W = self.W+self.parameters['eta']*(np.tile(self.delta, (self.parameters['nlc'],1))).T*self.trace
 
 	def computeNextAction(self):
+		""" Called by general model for choosing action
+		if mixture of experts, return action angle and distance to "walk" """
 		super(Taxon, self).computeNextAction()
-		return self.action
+		return self.action, self.norm
 	
 class Planning(Expert):
 

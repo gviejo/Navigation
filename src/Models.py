@@ -43,7 +43,8 @@ class Dolle(Model):
 		self.n_lc = self.parameters['nlc'] # NUmber of landmarks cells		
 		self.n_nodes = 0 # Number of nodes | not constant
 		self.actions = dict.fromkeys(self.experts.keys()) # Proposed action from each expert
-		self.action = None
+		self.action_angle = None
+		self.action_distance = None
 		self.g = dict() # Gate value
 		self.g_max = [] # Maximum value
 		self.winner = None # Winner expert 
@@ -58,9 +59,9 @@ class Dolle(Model):
 			self.trace_lc[k] = np.zeros((1,self.n_lc))
 			self.trace_nodes[k] = dict()		
 
-	def setPosition(self, direction, distance, position):	
+	def setPosition(self, direction, distance, position, wall):	
 		for k in self.k_ex:
-			self.experts[k].setCellInput(direction, distance, position)			
+			self.experts[k].setCellInput(direction, distance, position, wall)
 		if 'p' in self.k_ex and self.n_nodes != len(self.experts['p'].nodes.keys()):
 			self.n_nodes = len(self.experts['p'].nodes.keys())
 			new_nodes = set(self.experts['p'].nodes.keys())-set(self.w_nodes.keys())
@@ -85,27 +86,31 @@ class Dolle(Model):
 		# CHOOSE EXPERTS				
 		self.winner = self.g[np.max(self.g.keys())]
 		self.g_max.append(np.max(self.g.keys()))
-		self.action = self.actions[self.winner]
+		self.action_angle, self.action_distance = self.actions[self.winner]
 		self.computeGateValue()		
 		self.updateTrace()
-		return self.action
+		return self.action_angle, self.action_distance
 
 	def updateTrace(self):
 		l = self.parameters['lambda']
 		for e in self.k_ex:			
-			self.trace_lc[e]=self.parameters['lambda']*self.trace_lc[e]+self.psi(self.action-self.actions[e])*self.experts['t'].lc
+			self.trace_lc[e]=self.parameters['lambda']*self.trace_lc[e]+self.psi(self.action_angle-self.actions[e][0])*self.experts['t'].lc
 			for i in self.trace_nodes[e].iterkeys():
-				self.trace_nodes[e][i]=l*self.trace_nodes[e][i]+self.experts['p'].nodes[i]*self.psi(self.action-self.actions[e])
+				self.trace_nodes[e][i]=l*self.trace_nodes[e][i]+self.experts['p'].nodes[i]*self.psi(self.action_angle-self.actions[e])
 
 	def learn(self, reward):
-		if reward:
-			self.experts['p'].isGoalNode()		
-		delta = float(reward)+self.parameters['gamma']*np.max(self.g.keys())-self.g_max[-1]
-		tmp = delta*self.parameters['epsilon']
 		for e in self.k_ex:
-			self.w_lc[e] = self.w_lc[e] + tmp*self.trace_lc[e]
-			for i in self.w_nodes[e].iterkeys():
-				self.w_nodes[e][i] = self.w_nodes[e][i] + tmp*self.trace_nodes[e][i]
+			self.experts[e].learn(self.action_angle, reward)
+		# delta = float(reward)+self.parameters['gamma']*np.max(self.g.keys())-self.g_max[-1]
+		# tmp = delta*self.parameters['epsilon']
+		# for e in self.k_ex:
+		# 	self.w_lc[e] = self.w_lc[e] + tmp*self.trace_lc[e]
+		# 	for i in self.w_nodes[e].iterkeys():
+		# 		self.w_nodes[e][i] = self.w_nodes[e][i] + tmp*self.trace_nodes[e][i]
+		# if reward:
+		# 	self.experts['p'].isGoalNode()		
+		
+		
 
 
 

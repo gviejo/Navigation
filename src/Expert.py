@@ -36,7 +36,6 @@ class Taxon(Expert):
 		self.parameters = { 'nlc': 100,		 		    # Number of landmarks cells
 							'sigma_lc': 0.475,			# Normalized landmark width
 							'sigma_vc': 0.001, 			# Visual cell width
-							'w_vc': 0.1, 				# Weight of visual cells
 							'sigma':0.392,				# Number of action cells
 							'nac': 36,					# Standard deviation of the generalization profile
 							'eta': 0.001,				# Learning rate
@@ -54,7 +53,6 @@ class Taxon(Expert):
 		self.ac = np.zeros((self.parameters['nac']))
 		# Connection
 		self.W = np.random.normal(0.0, 0.1, size=(self.parameters['nac'], self.parameters['nlc']))
-		self.U = np.ones(self.parameters['nac'])*self.parameters['w_vc']
 		# Proposed direction		
 		self.action = 0.0 # The proposed direction
 		self.norm = 0.0 # The distance if action is choosen
@@ -74,8 +72,7 @@ class Taxon(Expert):
 		delta = np.arccos(np.cos(direction)*np.cos(self.lc_direction)+np.sin(direction)*np.sin(self.lc_direction))		
 		self.lc = np.exp(-(np.power(delta,2))/(2*(self.parameters['sigma_lc']/float(distance))**2))
 		delta = np.arccos(np.cos(wall[0])*np.cos(self.vc_direction)+np.sin(wall[0])*np.sin(self.vc_direction))
-		print wall
-		self.vc = np.exp(-(np.power(delta, 2))/(2*(self.parameters['sigma_vc']/float(wall[1]+0.00001))**2))
+		self.vc = np.exp(-(np.power(delta, 2))/(2*(self.parameters['sigma_vc']/float(wall[1]-0.0001))**2))
 		self.computeActionActivity()		
 		## TO REMOVE
 		self.lcs.append(self.lc)
@@ -87,7 +84,6 @@ class Taxon(Expert):
 		self.ac = np.dot(self.W, self.lc) - self.vc
 		self.ac = np.tanh(self.ac)
 		xy = [(self.ac*np.sin(self.ac_direction)).sum(), (self.ac*np.cos(self.ac_direction)).sum()]
-		#self.action = np.arctan((self.ac*np.sin(self.ac_direction)).sum()/(self.ac*np.cos(self.ac_direction)).sum())
 		self.action = np.arctan2(xy[0], xy[1])
 		self.norm = np.sqrt(np.sum(np.power(xy, 2)))
 		## TO REMOVE

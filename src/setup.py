@@ -23,15 +23,8 @@ class Agent(object):
 		self.world = world
 		self.parameters = parameters
 		self.model.setAllParameters(self.parameters)
-		self.agent_direction = self.world.start_direction # Relative to a allocentric coordinate from the agent
-		self.landmark_position = self.world.landmark_position # Relative to a allocentric coordinate from the environnment		
-		self.position = np.array(self.world.start_position) # Relative to a allocentric coordinate from the environnment
-		self.distance = np.sqrt(np.sum(np.power(self.position-self.landmark_position, 2))) # Distance between the agent and the landmark relative to a allocentric coordinate from the environnment		
-		self.computeDirection() # Angle between agent direction and landmark direction		
-		self.action_angle = 0.0
-		self.action_speed = 0.0
-		self.wall = self.world.computeWallInformation(self.position, self.agent_direction)
-		self.d = 0.2
+		self.start()	
+		self.d = 0.05
 		self.stats = stats
 		if self.stats:
 			self.colors = dict({'t':(1.0, 0.0, 0.0),'e':(0.0, 0.0, 1.0),'p':(0.0, 1.0, 0.0)})
@@ -42,6 +35,17 @@ class Agent(object):
 			self.actions = list([[self.action_angle, self.action_speed]])
 			self.gates = dict({k:[] for k in self.model.k_ex})
 			self.walls = [list(self.wall)]
+
+	def start(self):
+		self.agent_direction = self.world.start_direction # Relative to a allocentric coordinate from the agent
+		self.landmark_position = self.world.landmark_position # Relative to a allocentric coordinate from the environnment		
+		self.position = np.array(self.world.start_position) # Relative to a allocentric coordinate from the environnment
+		self.distance = np.sqrt(np.sum(np.power(self.position-self.landmark_position, 2))) # Distance between the agent and the landmark relative to a allocentric coordinate from the environnment		
+		self.computeDirection() # Angle between agent direction and landmark direction		
+		self.action_angle = 0.0
+		self.action_speed = 0.0
+		self.wall = self.world.computeWallInformation(self.position, self.agent_direction)
+		self.reward = False
 
 	def computeDirection(self):
 		"""Counter clockwise angle is computed in an allocentric coordinate 
@@ -55,17 +59,15 @@ class Agent(object):
 		""" New position of the agent in the allocentric coordinate of the 
 		world. position must be between [-1,1] so one simple condition to
 		keep boundaries """
-		# self.position[0] += np.cos(self.agent_direction) * self.action_speed
-		# self.position[1] += np.sin(self.agent_direction) * self.action_speed
-		self.position[0] += np.cos(self.agent_direction) * self.d
-		self.position[1] += np.sin(self.agent_direction) * self.d
-		#self.position[self.position>1.0] = 1.0
-		#self.position[self.position<-1.0] = -1.0
+		self.position[0] += np.cos(self.agent_direction) * self.action_speed
+		self.position[1] += np.sin(self.agent_direction) * self.action_speed
+		self.position[self.position>1.0] = 1.0
+		self.position[self.position<-1.0] = -1.0
 
 	def update(self):
 		""" Fonction to move the agent in a new position
 		Action should be in range [-pi, pi]"""
-		#self.agent_direction = self.agent_direction+self.action_angle		
+		self.agent_direction = self.agent_direction+self.action_angle		
 		if self.agent_direction<=-np.pi: self.agent_direction = 2*np.pi - np.abs(self.agent_direction)
 		if self.agent_direction>np.pi: self.agent_direction = self.agent_direction - 2*np.pi
 		self.computePosition()
@@ -76,11 +78,13 @@ class Agent(object):
 	def learn(self):
 		""" Check from class world if agent get reward
 		then update Experts. Reward can be boolean or value"""
-		self.model.learn(self.world.getReward(self.position))
+		reward = self.world.getReward(self.position)
+		self.reward = reward>0.0
+		self.model.learn(reward)
 
 	def step(self):
 		self.action_angle, d = self.model.getAction()
-		self.action_speed = self.action_speed + self.d * (d-self.action_speed)
+		self.action_speed = (1.0-self.d) * self.action_speed + self.d * (d-self.action_speed)
 		self.update()
 		self.learn()
 		self.model.setPosition(self.direction, self.distance, self.position, self.wall)
@@ -103,12 +107,13 @@ class World(object):
 	def __init__(self):		
 		self.landmark_position = np.array([0.5, 0.5])
 		self.reward_position = np.array([-0., 0.5])
-		self.reward_size = 0.2 # Radius of the reward position
+		self.reward_size = 0.1 # Radius of the reward position
 		tmp = np.arange(0, 2*np.pi, 0.1)
 		self.reward_circle = np.vstack((np.cos(tmp), np.sin(tmp))).T * self.reward_size + self.reward_position
 		self.start_position = np.array([0.0, 0.1])
 		self.start_direction = np.pi/4.
 		self.distance = np.sqrt(np.sum(np.power(self.start_position-self.reward_position, 2)))  # Distance between the agent and the reward
+		
 
 	def getReward(self, position):
 		self.distance = np.sqrt(np.sum(np.power(position-self.reward_position, 2)))

@@ -19,8 +19,7 @@ import matplotlib.patches as mpatches
 
 parameters = { 'nlc': 100,		 		    # Number of landmarks cells
 				'sigma_lc': 0.01,			# Normalized landmark width
-				'sigma_vc': 0.01,    	    # Visual cell width
-				'w_vc': 0.01, 			    # Weight of visual cell
+				'sigma_vc': 0.006,    	    # Visual cell width
 				'sigma':0.1,				# Number of action cells
 				'nac': 36,					# Standard deviation of the generalization profile
 				'eta': 0.001,				# Learning rate
@@ -39,7 +38,9 @@ agent = Agent(Dolle(parameters), World(), parameters, stats = True)
 
 
 t1 = time()
-for i in xrange(6):
+for i in xrange(10):
+	agent.start()
+	while 
 	agent.step()	
 t2 = time()
 
@@ -84,7 +85,7 @@ subplot2grid((3,3),(1,1), colspan = 2)
 # xlim(0,len(agent.actions))
 #ylim(0, 2*np.pi)
 #plot(wall[:,1], 'o-', label = 'distance to wall')
-[plot(agent.model.experts['t'].ac_direction, lvc[:,i], 'o-', label = str(i)) for i in xrange(lvc.shape[1])]
+#[plot(agent.model.experts['t'].ac_direction, lvc[:,i], 'o-', label = str(i)) for i in xrange(lvc.shape[1])]
 legend()
 
 subplot2grid((3,3),(2,1), colspan = 2)
@@ -94,10 +95,10 @@ subplot2grid((3,3),(2,1), colspan = 2)
 
 #plot(lac)
 #plot(agent.model.experts['t'].ldirec, 'o-', label = 'direction')
-#plot(actions[:,0], 'o-', label = 'action angle')
+plot(actions[:,1], 'o-', label = 'action speed')
 #plot(wall[:,0], 'o-', label = 'wall angle')
-[plot(agent.model.experts['t'].ac_direction, lac[:,i], 'o-', label = str(i)) for i in xrange(lac.shape[1])]
+#[plot(agent.model.experts['t'].ac_direction, lac[:,i], 'o-', label = str(i)) for i in xrange(lac.shape[1])]
 legend()
-ylim(-np.pi, np.pi)
+#ylim(-np.pi, np.pi)
 show()
 

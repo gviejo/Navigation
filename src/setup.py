@@ -24,7 +24,8 @@ class Agent(object):
 		self.parameters = parameters
 		self.model.setAllParameters(self.parameters)
 		self.start()	
-		self.d = 0.05
+		self.d = 0.1
+		self.vitesse_max = 0.1
 		self.stats = stats
 		if self.stats:
 			self.colors = dict({'t':(1.0, 0.0, 0.0),'e':(0.0, 0.0, 1.0),'p':(0.0, 1.0, 0.0)})
@@ -35,6 +36,8 @@ class Agent(object):
 			self.actions = list([[self.action_angle, self.action_speed]])
 			self.gates = dict({k:[] for k in self.model.k_ex})
 			self.walls = [list(self.wall)]
+			self.rewards = []
+			self.speeds = []
 
 	def start(self):
 		self.agent_direction = self.world.start_direction # Relative to a allocentric coordinate from the agent
@@ -81,10 +84,13 @@ class Agent(object):
 		reward = self.world.getReward(self.position)
 		self.reward = reward>0.0
 		self.model.learn(reward)
+		
 
 	def step(self):
 		self.action_angle, d = self.model.getAction()
-		self.action_speed = (1.0-self.d) * self.action_speed + self.d * (d-self.action_speed)
+		#self.action_speed = (1.0-self.d) * self.action_speed + self.d * (d-self.action_speed)		
+		#self.action_speed = self.d + 0.0q(d-self.action_speed)
+		self.action_speed = self.vitesse_max/(1.+np.exp(-self.d*d))
 		self.update()
 		self.learn()
 		self.model.setPosition(self.direction, self.distance, self.position, self.wall)
@@ -100,18 +106,19 @@ class Agent(object):
 		self.actions.append(list([self.action_angle, self.action_speed]))
 		for k in self.model.k_ex: self.gates[k].append(dict(zip(self.model.g.values(),self.model.g.keys()))[k])
 		self.walls.append(list(self.wall))
-
+		self.rewards.append(self.reward)
+		self.speeds.append(self.action_speed)
 
 class World(object):
 
 	def __init__(self):		
-		self.landmark_position = np.array([0.5, 0.5])
-		self.reward_position = np.array([-0., 0.5])
-		self.reward_size = 0.1 # Radius of the reward position
+		self.landmark_position = np.array([0.1, 0.0])
+		self.reward_position = np.array([0., 0.5])
+		self.reward_size = 0.15 # Radius of the reward position
 		tmp = np.arange(0, 2*np.pi, 0.1)
 		self.reward_circle = np.vstack((np.cos(tmp), np.sin(tmp))).T * self.reward_size + self.reward_position
-		self.start_position = np.array([0.0, 0.1])
-		self.start_direction = np.pi/4.
+		self.start_position = np.array([0.0, -0.5])
+		self.start_direction = np.pi/2.
 		self.distance = np.sqrt(np.sum(np.power(self.start_position-self.reward_position, 2)))  # Distance between the agent and the reward
 		
 

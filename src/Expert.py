@@ -65,6 +65,8 @@ class Taxon(Expert):
 		self.lac = list()
 		self.lvc = list()
 		self.ldelta = list()
+		self.ltrace = list()
+		self.lW = list()
 
 	def setCellInput(self, direction, distance, position, wall):
 		""" Direction should be in [-pi, pi] interval 
@@ -91,16 +93,24 @@ class Taxon(Expert):
 		##############
 
 	def updateTrace(self, action):
-		delta = np.arccos(np.cos(action)*np.cos(self.ac_direction)+np.sin(action)*np.sin(self.ac_direction))
-		ac = np.exp(-(np.power(delta,2))/(2*self.parameters['sigma']**2))
+		delta = np.arccos(np.cos(action)*np.cos(self.ac_direction)+np.sin(action)*np.sin(self.ac_direction))		
+		ac = np.exp(-(np.power(delta,2))/(2*self.parameters['sigma']**2))		
 		self.trace = self.parameters['lambda']*self.trace+np.outer(ac, self.lc)
+		#### TO REMOVE
+		self.ltrace.append(self.trace)
+		#############
 
 	def learn(self, action, reward):
 		""" Action performed selected from a mixture of experts"""
 		super(Taxon, self).learn()
+				
 		self.updateTrace(action)
-		self.delta = reward + self.parameters['gamma']*self.ac.max()-self.ac
+		self.delta = reward + self.parameters['gamma']*self.ac.max()-self.ac		
 		self.W = self.W+self.parameters['eta']*(np.tile(self.delta, (self.parameters['nlc'],1))).T*self.trace
+		####TO REMOVE
+		self.ldelta.append(self.delta)
+		self.lW.append(self.W)
+		################
 
 	def computeNextAction(self):
 		""" Called by general model for choosing action

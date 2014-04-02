@@ -34,9 +34,9 @@ class Dolle(Model):
 							'nlc':100 }		
 		self.setAllParameters(parameters)
 		self.experts = {
-						't':Taxon(parameters), 
-						#'p':Planning(parameters),
-						'e':Expert()
+						#'t':Taxon(parameters), 
+						'p':Planning(parameters),
+						#'e':Expert()
 						}
 		self.n_ex = len(self.experts.keys()) # Number of experts
 		self.k_ex = self.experts.keys() # Keys of experts | faster to declare here
@@ -79,17 +79,18 @@ class Dolle(Model):
 		super(Dolle, self).retrieveAction()
 		for e in self.k_ex:
 			self.actions[e] = self.experts[e].computeNextAction()
-		self.computeGateValue()
+		#self.computeGateValue()
 		
 	def getAction(self):
 		self.retrieveAction()
 		# CHOOSE EXPERTS				
+		self.winner = 'p'
 		#self.winner = self.g[np.max(self.g.keys())]
-		self.winner = self.g.values()[np.random.randint(len(self.g.values()))]
-		self.g_max.append(np.max(self.g.keys()))
+		#self.winner = self.g.values()[np.random.randint(len(self.g.values()))]
+		#self.g_max.append(np.max(self.g.keys()))
 		self.action_angle, self.action_distance = self.actions[self.winner]		
 
-		self.updateTrace()
+		#self.updateTrace()
 		return self.action_angle, self.action_distance
 
 	def updateTrace(self):
@@ -107,8 +108,7 @@ class Dolle(Model):
 		# 	self.w_lc[e] = self.w_lc[e] + tmp*self.trace_lc[e]
 		# 	for i in self.w_nodes[e].iterkeys():
 		# 		self.w_nodes[e][i] = self.w_nodes[e][i] + tmp*self.trace_nodes[e][i]
-		# if reward:
-		# 	self.experts['p'].isGoalNode()		
+
 		
 		
 

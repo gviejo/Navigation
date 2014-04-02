@@ -24,8 +24,8 @@ class Agent(object):
 		self.parameters = parameters
 		self.model.setAllParameters(self.parameters)
 		self.n_steps = [] # NUmber of step before reaching reward
-		self.d = 0.1
-		self.vitesse_max = 0.1
+		self.d = 0.8
+		self.vitesse_max = 0.2
 		self.stats = stats
 		if self.stats:
 			self.positions = []
@@ -47,15 +47,15 @@ class Agent(object):
 		if self.stats:
 			self.colors = dict({'t':(1.0, 0.0, 0.0),'e':(0.0, 0.0, 1.0),'p':(0.0, 1.0, 0.0)})
 			self.positions.append([])			
-			# self.directions = [self.agent_direction]
-			# self.distances = [list([self.distance, self.world.distance])]
-			# self.experts = list(['t'])
-			# self.actions = list([[self.action_angle, self.action_speed]])
-			# self.gates = dict({k:[] for k in self.model.k_ex})
-			# self.walls = [list(self.wall)]
-			# self.rewards = []
-			# self.speeds = []
-			# self.winners = []
+			self.directions = [self.agent_direction]
+			self.distances = [list([self.distance, self.world.distance])]
+			self.experts = list(['t'])
+			self.actions = list([[self.action_angle, self.action_speed]])
+			self.gates = dict({k:[] for k in self.model.k_ex})
+			self.walls = [list(self.wall)]
+			self.rewards = []
+			self.speeds = []
+			self.winners = []
 
 	def computeDirection(self):
 		"""Counter clockwise angle is computed in an allocentric coordinate 
@@ -105,15 +105,15 @@ class Agent(object):
 
 	def getStats(self):
 		self.positions[-1].append(list(self.position))
-		# self.directions.append(self.agent_direction)
-		# self.distances.append(list([self.distance, self.world.distance]))
-		# self.experts.append(self.colors[self.model.winner])
-		# self.actions.append(list([self.action_angle, self.action_speed]))
-		# #for k in self.model.k_ex: self.gates[k].append(dict(zip(self.model.g.values(),self.model.g.keys()))[k])
-		# self.winners.append((self.model.winner=='t')*1.0)
-		# self.walls.append(list(self.wall))
-		# self.rewards.append(self.reward)
-		# self.speeds.append(self.action_speed)
+		self.directions.append(self.agent_direction)
+		self.distances.append(list([self.distance, self.world.distance]))
+		self.experts.append(self.colors[self.model.winner])
+		self.actions.append(list([self.action_angle, self.action_speed]))
+		#for k in self.model.k_ex: self.gates[k].append(dict(zip(self.model.g.values(),self.model.g.keys()))[k])
+		self.winners.append((self.model.winner=='t')*1.0)
+		self.walls.append(list(self.wall))
+		self.rewards.append(self.reward)
+		self.speeds.append(self.action_speed)
 
 class World(object):
 

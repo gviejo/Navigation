@@ -129,6 +129,8 @@ class Planning(Expert):
 							'npc': 1681,				# Number of simulated Place cells
 							'sigma_pc': 0.2 }				# Place field size
 		self.setAllParameters(parameters)
+		self.direction = None # Direction of the agent in a allocentric frame [-pi, pi]
+		self.position = None
 		# Place cells
 		self.pc = np.zeros((self.parameters['npc']))
 		self.pc_position = np.random.uniform(-1,1, (self.parameters['npc'],2))
@@ -136,15 +138,21 @@ class Planning(Expert):
 		self.nb_nodes = 0
 		self.pc_nodes = dict() #indices : weight for place cells - nodes links
 		self.nodes = dict() # Nodes activity
+		self.nodes_position = dict() # Mean position of place cells linked to nodes | Bad but no choice
 		self.current_node = 0 # Current node
 		self.goal_node = 0
 		self.goal_found = False
 		# Planning
 		self.edges = dict({0:[]}) # Links between nodes
 		self.values = dict() # Weight associated to each nodes, should change every time step
-		
-	def setCellInput(self, direction, distance, position):
+		# Return 
+		self.action = 0.0
+		self.speed = 0.1
+
+	def setCellInput(self, direction, distance, position, wall):
 		if np.max(position)>1.0 or np.min(position)<-1.0: raise Warning("Place cells position should be normalized between [-1,1]")
+		self.direction = direction
+		self.position = position
 		distance = np.sqrt((np.power(self.pc_position-position, 2)).sum(1))
 		self.pc = np.exp(-distance/(2*self.parameters['sigma_pc']**2))
 		self.computeGraphNodeActivity()	
@@ -166,6 +174,7 @@ class Planning(Expert):
 		self.edges[self.nb_nodes] = [self.current_node]
 		self.edges[self.current_node].append(self.nb_nodes)
 		self.values[self.nb_nodes] = 0.0
+		self.nodes_position[self.nb_nodes] = np.mean(self.pc_position[ind], 0)		
 		self.current_node = self.nb_nodes
 
 	def connectNode(self):
@@ -175,12 +184,13 @@ class Planning(Expert):
 			self.edges[self.current_node].append(new_node)		
 		self.current_node = new_node
 
-	def isGoalNode(self):
-		# should be used only when reward is found
-		self.goal_found = True
-		for i in self.values.iterkeys(): self.values[i] = 0.0
-		self.values[self.current_node] = 1.0		
-		map(lambda x: self.propagate(x, [self.current_node], self.parameters['alpha']), self.edges[self.current_node])		
+	def learn(self, action, reward):
+		super(Planning, self).learn(action, reward)		
+		if reward:
+			self.goal_found = True
+			for i in self.values.iterkeys(): self.values[i] = 0.0
+			self.values[self.current_node] = 1.0		
+			map(lambda x: self.propagate(x, [self.current_node], self.parameters['alpha']), self.edges[self.current_node])		
 
 	def propagate(self, new_node, visited, value):
 		if self.values[new_node]<value: self.values[new_node] = value
@@ -190,17 +200,21 @@ class Planning(Expert):
 		 	map(lambda x: self.propagate(x, visited, self.parameters['alpha']*value), next_node)		
 
 	def computeNextAction(self):
-		super(Planning, self).computeNextAction()			
+		super(Planning, self).computeNextAction()
+		print self.goal_found
 		if self.goal_found:
 			self.current_node = np.argmax(self.nodes.values())
 			self.goal_node = np.argmax(self.values.values())+1
 			self.path = []
 			self.exploreGraph(self.edges[self.current_node], [self.current_node])			
+			self.computeActionAngle()
+			return (self.action, self.speed)
 		else : 
-		 	return np.random.uniform(0, 2*np.pi)
+		 	return (np.random.uniform(0,2*np.pi), np.random.uniform(0, 1))
 
 	def exploreGraph(self, next_nodes, visited):		
-		next_nodes = list(set(next_nodes)-set(visited))		
+		next_nodes = list(set(next_nodes)-set(visited))
+		print self.path, next_nodes
 		node = next_nodes[np.argmax([self.values[i] for i in next_nodes])]		
 		visited.append(node)		
 		self.path.append(node)		
@@ -208,3 +222,9 @@ class Planning(Expert):
 			return
 		else:
 			self.exploreGraph(self.edges[node], visited)
+
+	def computeActionAngle(self):		
+		goal_position = self.nodes_position[self.path[0]]
+		goal_position = goal_position - self.position
+		angle = np.arctan2(goal_position[1], goal_position[0])
+		self.action = angle - self.direction

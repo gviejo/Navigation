@@ -24,11 +24,14 @@ class Expert(object):
 	def setAllParameters(self, parameters):		
 		for i in parameters.keys(): self.setParameter(i, parameters[i])
 
-	def learn(self):
+	def learn(self, angle, reward):
+		pass
+
+	def setCellInput(self, direction, distance, position, wall):
 		pass
 
 	def computeNextAction(self):
-		return np.random.uniform(0,2*np.pi)
+		return (np.random.uniform(0,2*np.pi), np.random.uniform(0, 1))
 
 class Taxon(Expert):
 
@@ -52,7 +55,7 @@ class Taxon(Expert):
 		self.ac_direction = np.arange(-np.pi, np.pi, (2*np.pi)/float(self.parameters['nac']))
 		self.ac = np.zeros((self.parameters['nac']))
 		# Connection
-		self.W = np.random.normal(0.0, 0.1, size=(self.parameters['nac'], self.parameters['nlc']))
+		self.W = np.random.normal(0.0, 0.9, size=(self.parameters['nac'], self.parameters['nlc']))
 		# Proposed direction		
 		self.action = 0.0 # The proposed direction
 		self.norm = 0.0 # The distance if action is choosen
@@ -102,8 +105,7 @@ class Taxon(Expert):
 
 	def learn(self, action, reward):
 		""" Action performed selected from a mixture of experts"""
-		super(Taxon, self).learn()
-				
+		super(Taxon, self).learn(action, reward)
 		self.updateTrace(action)
 		self.delta = reward + self.parameters['gamma']*self.ac.max()-self.ac		
 		self.W = self.W+self.parameters['eta']*(np.tile(self.delta, (self.parameters['nlc'],1))).T*self.trace
@@ -206,9 +208,3 @@ class Planning(Expert):
 			return
 		else:
 			self.exploreGraph(self.edges[node], visited)
-
-
-class Exploration(Expert):
-
-	def __init__(self):
-		self.parameters = {}

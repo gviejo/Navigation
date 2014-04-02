@@ -7,7 +7,7 @@ Copyright (c) 2013 Guillaume VIEJO. All rights reserved.
 """
 
 from itertools import izip
-from Expert import Taxon, Planning, Exploration
+from Expert import Taxon, Planning, Expert
 import numpy as np
 import sys
 
@@ -36,7 +36,7 @@ class Dolle(Model):
 		self.experts = {
 						't':Taxon(parameters), 
 						#'p':Planning(parameters),
-						#'e':Exploration(parameters)
+						'e':Expert()
 						}
 		self.n_ex = len(self.experts.keys()) # Number of experts
 		self.k_ex = self.experts.keys() # Keys of experts | faster to declare here
@@ -71,7 +71,7 @@ class Dolle(Model):
 
 	def computeGateValue(self):
 		self.g = dict()
-		for e in self.k_ex:
+		for e in self.k_ex:			
 			tmp = np.array([self.experts['p'].nodes[i]*self.w_nodes[e][i] for i in self.w_nodes[e].keys()])
 			self.g[(np.dot(self.w_lc[e], self.experts['t'].lc)+np.sum(tmp))[0]] = e
 
@@ -84,16 +84,16 @@ class Dolle(Model):
 	def getAction(self):
 		self.retrieveAction()
 		# CHOOSE EXPERTS				
-		self.winner = self.g[np.max(self.g.keys())]
+		#self.winner = self.g[np.max(self.g.keys())]
+		self.winner = self.g.values()[np.random.randint(len(self.g.values()))]
 		self.g_max.append(np.max(self.g.keys()))
-		self.action_angle, self.action_distance = self.actions[self.winner]
-		self.computeGateValue()		
+		self.action_angle, self.action_distance = self.actions[self.winner]		
+
 		self.updateTrace()
 		return self.action_angle, self.action_distance
 
 	def updateTrace(self):
-		l = self.parameters['lambda']
-		for e in self.k_ex:			
+		for e in self.k_ex:
 			self.trace_lc[e]=self.parameters['lambda']*self.trace_lc[e]+self.psi(self.action_angle-self.actions[e][0])*self.experts['t'].lc
 			for i in self.trace_nodes[e].iterkeys():
 				self.trace_nodes[e][i]=l*self.trace_nodes[e][i]+self.experts['p'].nodes[i]*self.psi(self.action_angle-self.actions[e])

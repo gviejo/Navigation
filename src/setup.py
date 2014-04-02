@@ -23,21 +23,12 @@ class Agent(object):
 		self.world = world
 		self.parameters = parameters
 		self.model.setAllParameters(self.parameters)
-		self.start()	
+		self.n_steps = [] # NUmber of step before reaching reward
 		self.d = 0.1
 		self.vitesse_max = 0.1
 		self.stats = stats
 		if self.stats:
-			self.colors = dict({'t':(1.0, 0.0, 0.0),'e':(0.0, 0.0, 1.0),'p':(0.0, 1.0, 0.0)})
-			self.positions = [list(self.position)]			
-			self.directions = [self.agent_direction]
-			self.distances = [list([self.distance, self.world.distance])]
-			self.experts = list(['t'])
-			self.actions = list([[self.action_angle, self.action_speed]])
-			self.gates = dict({k:[] for k in self.model.k_ex})
-			self.walls = [list(self.wall)]
-			self.rewards = []
-			self.speeds = []
+			self.positions = []
 
 	def start(self):
 		self.agent_direction = self.world.start_direction # Relative to a allocentric coordinate from the agent
@@ -49,6 +40,22 @@ class Agent(object):
 		self.action_speed = 0.0
 		self.wall = self.world.computeWallInformation(self.position, self.agent_direction)
 		self.reward = False
+		self.world.reward_found = False
+		self.model.setPosition(self.direction, self.distance, self.position, self.wall)
+		self.n_steps.append(float(0))
+
+		if self.stats:
+			self.colors = dict({'t':(1.0, 0.0, 0.0),'e':(0.0, 0.0, 1.0),'p':(0.0, 1.0, 0.0)})
+			self.positions.append([])			
+			# self.directions = [self.agent_direction]
+			# self.distances = [list([self.distance, self.world.distance])]
+			# self.experts = list(['t'])
+			# self.actions = list([[self.action_angle, self.action_speed]])
+			# self.gates = dict({k:[] for k in self.model.k_ex})
+			# self.walls = [list(self.wall)]
+			# self.rewards = []
+			# self.speeds = []
+			# self.winners = []
 
 	def computeDirection(self):
 		"""Counter clockwise angle is computed in an allocentric coordinate 
@@ -87,27 +94,26 @@ class Agent(object):
 		
 
 	def step(self):
-		self.action_angle, d = self.model.getAction()
-		#self.action_speed = (1.0-self.d) * self.action_speed + self.d * (d-self.action_speed)		
-		#self.action_speed = self.d + 0.0q(d-self.action_speed)
+		self.action_angle, d = self.model.getAction()		
 		self.action_speed = self.vitesse_max/(1.+np.exp(-self.d*d))
 		self.update()
 		self.learn()
 		self.model.setPosition(self.direction, self.distance, self.position, self.wall)
-			
+		self.n_steps[-1] += 1			
 		if self.stats:
 			self.getStats()
 
 	def getStats(self):
-		self.positions.append(list(self.position))
-		self.directions.append(self.agent_direction)
-		self.distances.append(list([self.distance, self.world.distance]))
-		self.experts.append(self.colors[self.model.winner])
-		self.actions.append(list([self.action_angle, self.action_speed]))
-		for k in self.model.k_ex: self.gates[k].append(dict(zip(self.model.g.values(),self.model.g.keys()))[k])
-		self.walls.append(list(self.wall))
-		self.rewards.append(self.reward)
-		self.speeds.append(self.action_speed)
+		self.positions[-1].append(list(self.position))
+		# self.directions.append(self.agent_direction)
+		# self.distances.append(list([self.distance, self.world.distance]))
+		# self.experts.append(self.colors[self.model.winner])
+		# self.actions.append(list([self.action_angle, self.action_speed]))
+		# #for k in self.model.k_ex: self.gates[k].append(dict(zip(self.model.g.values(),self.model.g.keys()))[k])
+		# self.winners.append((self.model.winner=='t')*1.0)
+		# self.walls.append(list(self.wall))
+		# self.rewards.append(self.reward)
+		# self.speeds.append(self.action_speed)
 
 class World(object):
 
@@ -120,11 +126,13 @@ class World(object):
 		self.start_position = np.array([0.0, -0.5])
 		self.start_direction = np.pi/2.
 		self.distance = np.sqrt(np.sum(np.power(self.start_position-self.reward_position, 2)))  # Distance between the agent and the reward
-		
+		self.reward_found = False
 
 	def getReward(self, position):
 		self.distance = np.sqrt(np.sum(np.power(position-self.reward_position, 2)))
 		if self.distance <= self.reward_size:
+			if self.distance <= self.reward_size/2.:
+				self.reward_found = True
 			return 1.0
 		else:
 			return 0.0

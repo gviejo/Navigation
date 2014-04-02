@@ -18,9 +18,9 @@ from time import time
 import matplotlib.patches as mpatches
 
 parameters = { 'nlc': 100,		 		    # Number of landmarks cells
-				'sigma_lc': 0.01,			# Normalized landmark width
-				'sigma_vc': 0.006,    	    # Visual cell width
-				'sigma':0.1,				# Number of action cells
+				'sigma_lc': 0.1,			# Normalized landmark width
+				'sigma_vc': 0.04,    	    # Visual cell width
+				'sigma':0.1,				# Action cell width
 				'nac': 36,					# Standard deviation of the generalization profile
 				'eta': 0.1,				    # Learning rate
 				'lambda': 0.1,				# Eligibility trace decay factor
@@ -39,7 +39,7 @@ agent = Agent(Dolle(parameters), World(), parameters, stats = True)
 agent.start()
 
 t1 = time()
-for i in xrange(200):
+for i in xrange(2000):	
 	agent.step()
 
 t2 = time()
@@ -90,10 +90,8 @@ legend()
 
 subplot2grid((3,3),(1,1), colspan = 2)
 #[plot(agent.model.experts['t'].lc_direction, lcs[:,i], 'o-', label = str(i)) for i in xrange(lcs.shape[1])]
-# [plot(agent.gates[k], 'o-', color = agent.colors[k], alpha = 0.9) for k in agent.gates.keys()]
-# line = [Line2D(range(1),range(1), marker = 'o', alpha =1.0, color = agent.colors[e], label = str(e)) for e in agent.colors.keys()]
 plot(agent.rewards)
-# legend(line, tuple(agent.colors.keys()))
+
 # xlim(0,len(agent.actions))
 #ylim(0, 2*np.pi)
 #plot(wall[:,1], 'o-', label = 'distance to wall')
@@ -104,11 +102,14 @@ subplot2grid((3,3),(2,1), colspan = 2)
 #plot(actions[:,0], label = 'angle')
 #plot(actions[:,1], label = 'speed')
 #plot(ldelta)
-
+#[plot(agent.gates[k], 'o-', color = agent.colors[k], alpha = 0.9) for k in agent.gates.keys()]
+#line = [Line2D(range(1),range(1), marker = 'o', alpha =1.0, color = agent.colors[e], label = str(e)) for e in agent.colors.keys()]
+#legend(line, tuple(agent.colors.keys()))
+#hist(agent.winners)
 #plot(agent.speeds)
 #plot(lac)
 #plot(agent.model.experts['t'].ldirec, 'o-', label = 'direction')
-plot(actions[:,0], 'o-', label = 'action direction')
+#plot(actions[:,0], 'o-', label = 'action direction')
 #[plot(agent.model.experts['t'].ac_direction, ldelta[:,i], 'o-', label = str(i)) for i in xrange(ldelta.shape[1])]
 #plot(wall[:,0], 'o-', label = 'wall angle')
 

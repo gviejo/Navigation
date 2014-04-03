@@ -111,7 +111,7 @@ class Agent(object):
 		self.actions.append(list([self.action_angle, self.action_speed]))
 		#for k in self.model.k_ex: self.gates[k].append(dict(zip(self.model.g.values(),self.model.g.keys()))[k])
 		self.winners.append((self.model.winner=='t')*1.0)
-		self.walls.append(list(self.wall))
+		#self.walls.append(list(self.wall))
 		self.rewards.append(self.reward)
 		self.speeds.append(self.action_speed)
 

@@ -186,11 +186,12 @@ class Planning(Expert):
 
 	def learn(self, action, reward):
 		super(Planning, self).learn(action, reward)		
-		if reward:
+		if reward and not self.goal_found:
 			self.goal_found = True
+			self.goal_node = self.current_node
 			for i in self.values.iterkeys(): self.values[i] = 0.0
 			self.values[self.current_node] = 1.0		
-			map(lambda x: self.propagate(x, [self.current_node], self.parameters['alpha']), self.edges[self.current_node])		
+		map(lambda x: self.propagate(x, [self.current_node], self.parameters['alpha']), self.edges[self.current_node])		
 
 	def propagate(self, new_node, visited, value):
 		if self.values[new_node]<value: self.values[new_node] = value
@@ -200,13 +201,14 @@ class Planning(Expert):
 		 	map(lambda x: self.propagate(x, visited, self.parameters['alpha']*value), next_node)		
 
 	def computeNextAction(self):
-		super(Planning, self).computeNextAction()
-		print self.goal_found
+		super(Planning, self).computeNextAction()		
 		if self.goal_found:
+			print self.goal_found
 			self.current_node = np.argmax(self.nodes.values())
 			self.goal_node = np.argmax(self.values.values())+1
+			if self.current_node == self.goal_node: return (0.0, 0.0)
 			self.path = []
-			self.exploreGraph(self.edges[self.current_node], [self.current_node])			
+			self.exploreGraph(self.edges[self.current_node], [0, self.current_node])			
 			self.computeActionAngle()
 			return (self.action, self.speed)
 		else : 
@@ -214,10 +216,9 @@ class Planning(Expert):
 
 	def exploreGraph(self, next_nodes, visited):		
 		next_nodes = list(set(next_nodes)-set(visited))
-		print self.path, next_nodes
 		node = next_nodes[np.argmax([self.values[i] for i in next_nodes])]		
 		visited.append(node)		
-		self.path.append(node)		
+		self.path.append(node)
 		if node == self.goal_node:
 			return
 		else:

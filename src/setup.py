@@ -89,6 +89,7 @@ class Agent(object):
 		""" Check from class world if agent get reward
 		then update Experts. Reward can be boolean or value"""
 		reward = self.world.getReward(self.position)
+		#print reward
 		self.reward = reward>0.0
 		self.model.learn(reward)
 		
@@ -96,6 +97,7 @@ class Agent(object):
 	def step(self):
 		self.action_angle, d = self.model.getAction()		
 		self.action_speed = self.vitesse_max/(1.+np.exp(-self.d*d))
+		#print self.action_angle, self.action_speed
 		self.update()
 		self.learn()
 		self.model.setPosition(self.direction, self.distance, self.position, self.wall)

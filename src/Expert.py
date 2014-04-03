@@ -176,6 +176,7 @@ class Planning(Expert):
 		self.values[self.nb_nodes] = 0.0
 		self.nodes_position[self.nb_nodes] = np.mean(self.pc_position[ind], 0)		
 		self.current_node = self.nb_nodes
+		if self.goal_found: map(lambda x: self.propagate(x, [0, self.goal_node], self.parameters['alpha']), self.edges[self.goal_node])
 
 	def connectNode(self):
 		new_node = np.argmax(self.nodes.values())+1
@@ -191,7 +192,7 @@ class Planning(Expert):
 			self.goal_node = self.current_node
 			for i in self.values.iterkeys(): self.values[i] = 0.0
 			self.values[self.current_node] = 1.0		
-		map(lambda x: self.propagate(x, [self.current_node], self.parameters['alpha']), self.edges[self.current_node])		
+			map(lambda x: self.propagate(x, [self.current_node], self.parameters['alpha']), self.edges[self.current_node])		
 
 	def propagate(self, new_node, visited, value):
 		if self.values[new_node]<value: self.values[new_node] = value
@@ -203,19 +204,21 @@ class Planning(Expert):
 	def computeNextAction(self):
 		super(Planning, self).computeNextAction()		
 		if self.goal_found:
-			print self.goal_found
 			self.current_node = np.argmax(self.nodes.values())
 			self.goal_node = np.argmax(self.values.values())+1
-			if self.current_node == self.goal_node: return (0.0, 0.0)
-			self.path = []
-			self.exploreGraph(self.edges[self.current_node], [0, self.current_node])			
-			self.computeActionAngle()
-			return (self.action, self.speed)
+			if self.current_node == self.goal_node: 
+				return (0.0, 0.0)
+			else:
+				self.path = []
+				self.exploreGraph(self.edges[self.current_node], [0, self.current_node])			
+				self.computeActionAngle()
+				#return (self.action, self.speed)
+				return (0.0, 0.0)
 		else : 
 		 	return (np.random.uniform(0,2*np.pi), np.random.uniform(0, 1))
 
 	def exploreGraph(self, next_nodes, visited):		
-		next_nodes = list(set(next_nodes)-set(visited))
+		next_nodes = list(set(next_nodes)-set(visited))		
 		node = next_nodes[np.argmax([self.values[i] for i in next_nodes])]		
 		visited.append(node)		
 		self.path.append(node)

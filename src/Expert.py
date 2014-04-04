@@ -27,7 +27,7 @@ class Expert(object):
 	def learn(self, angle, reward):
 		pass
 
-	def setCellInput(self, direction, distance, position, wall):
+	def setCellInput(self, direction, distance, position, wall, agent_direction = 0):
 		pass
 
 	def computeNextAction(self):
@@ -145,24 +145,29 @@ class Planning(Expert):
 		# Planning
 		self.edges = dict({0:[]}) # Links between nodes
 		self.values = dict() # Weight associated to each nodes, should change every time step
+		self.path = []
 		# Return 
 		self.action = 0.0
 		self.speed = 0.1
 
-	def setCellInput(self, direction, distance, position, wall):
+		self.debug = False
+
+	def setCellInput(self, direction, distance, position, wall, agent_direction = 0):
 		if np.max(position)>1.0 or np.min(position)<-1.0: raise Warning("Place cells position should be normalized between [-1,1]")
-		self.direction = direction
+		self.direction = agent_direction
 		self.position = position
 		distance = np.sqrt((np.power(self.pc_position-position, 2)).sum(1))
 		self.pc = np.exp(-distance/(2*self.parameters['sigma_pc']**2))
 		self.computeGraphNodeActivity()	
 
 	def computeGraphNodeActivity(self):			
-		for i in self.nodes.iterkeys(): self.nodes[i] = np.dot(self.pc[self.pc_nodes[i].keys()],self.pc_nodes[i].values())		
+		for i in self.nodes.iterkeys(): self.nodes[i] = np.dot(self.pc[self.pc_nodes[i].keys()],self.pc_nodes[i].values())
 		if len(self.nodes.keys()) == 0 or np.max(self.nodes.values()) < self.parameters['theta_node']:
 			self.createNewNode()
-		else:
+		elif not self.goal_found:
 			self.connectNode()
+		else:
+			self.current_node = np.argmax(self.nodes.values())+1
 
 	def createNewNode(self):
 		# Store a list of place cells indice
@@ -175,8 +180,7 @@ class Planning(Expert):
 		self.edges[self.current_node].append(self.nb_nodes)
 		self.values[self.nb_nodes] = 0.0
 		self.nodes_position[self.nb_nodes] = np.mean(self.pc_position[ind], 0)		
-		self.current_node = self.nb_nodes
-		if self.goal_found: map(lambda x: self.propagate(x, [0, self.goal_node], self.parameters['alpha']), self.edges[self.goal_node])
+		self.current_node = self.nb_nodes		
 
 	def connectNode(self):
 		new_node = np.argmax(self.nodes.values())+1
@@ -184,11 +188,13 @@ class Planning(Expert):
 			self.edges[new_node].append(self.current_node)
 			self.edges[self.current_node].append(new_node)		
 		self.current_node = new_node
+		if self.goal_found: map(lambda x: self.propagate(x, [0, self.goal_node], self.parameters['alpha']), self.edges[self.goal_node])
 
 	def learn(self, action, reward):
 		super(Planning, self).learn(action, reward)		
 		if reward and not self.goal_found:
 			self.goal_found = True
+			self.createNewNode()
 			self.goal_node = self.current_node
 			for i in self.values.iterkeys(): self.values[i] = 0.0
 			self.values[self.current_node] = 1.0		
@@ -204,18 +210,20 @@ class Planning(Expert):
 	def computeNextAction(self):
 		super(Planning, self).computeNextAction()		
 		if self.goal_found:
-			self.current_node = np.argmax(self.nodes.values())
-			self.goal_node = np.argmax(self.values.values())+1
+			#self.current_node = np.argmax(self.nodes.values())+1
+			#self.goal_node = np.argmax(self.values.values())+1
 			if self.current_node == self.goal_node: 
-				return (0.0, 0.0)
+			 	return (0.0, 0.0)
 			else:
 				self.path = []
 				self.exploreGraph(self.edges[self.current_node], [0, self.current_node])			
 				self.computeActionAngle()
-				#return (self.action, self.speed)
-				return (0.0, 0.0)
+				if self.debug:
+					print self.path
+					print (self.action, self.speed)
+				return (self.action, self.speed)
 		else : 
-		 	return (np.random.uniform(0,2*np.pi), np.random.uniform(0, 1))
+		 	return (np.random.uniform(0,2*np.pi), np.random.uniform(0, 1)*self.speed)
 
 	def exploreGraph(self, next_nodes, visited):		
 		next_nodes = list(set(next_nodes)-set(visited))		
@@ -228,7 +236,7 @@ class Planning(Expert):
 			self.exploreGraph(self.edges[node], visited)
 
 	def computeActionAngle(self):		
-		goal_position = self.nodes_position[self.path[0]]
-		goal_position = goal_position - self.position
-		angle = np.arctan2(goal_position[1], goal_position[0])
+		aim_position = self.nodes_position[self.path[0]]
+		aim_position = aim_position - self.position
+		angle = np.arctan2(aim_position[1], aim_position[0])
 		self.action = angle - self.direction

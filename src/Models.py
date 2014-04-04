@@ -59,15 +59,15 @@ class Dolle(Model):
 			self.trace_lc[k] = np.zeros((1,self.n_lc))
 			self.trace_nodes[k] = dict()		
 
-	def setPosition(self, direction, distance, position, wall):	
+	def setPosition(self, direction, distance, position, wall, agent_direction = 0):	
 		for k in self.k_ex:
-			self.experts[k].setCellInput(direction, distance, position, wall)
-		if 'p' in self.k_ex and self.n_nodes != len(self.experts['p'].nodes.keys()):
-			self.n_nodes = len(self.experts['p'].nodes.keys())
-			new_nodes = set(self.experts['p'].nodes.keys())-set(self.w_nodes.keys())
-			for e in self.k_ex: 
-				self.w_nodes[e].update(izip(new_nodes,np.random.uniform(0,0.01,size=len(new_nodes))))			
-				self.trace_nodes[e].update(izip(new_nodes,np.zeros(len(new_nodes))))
+			self.experts[k].setCellInput(direction, distance, position, wall, agent_direction)
+		# if 'p' in self.k_ex and self.n_nodes != len(self.experts['p'].nodes.keys()):
+		# 	self.n_nodes = len(self.experts['p'].nodes.keys())
+		# 	new_nodes = set(self.experts['p'].nodes.keys())-set(self.w_nodes.keys())
+		# 	for e in self.k_ex: 
+		# 		self.w_nodes[e].update(izip(new_nodes,np.random.uniform(0,0.01,size=len(new_nodes))))			
+		# 		self.trace_nodes[e].update(izip(new_nodes,np.zeros(len(new_nodes))))
 
 	def computeGateValue(self):
 		self.g = dict()

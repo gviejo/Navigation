@@ -27,6 +27,8 @@ class Agent(object):
 		self.d = 0.8
 		self.vitesse_max = 0.2
 		self.stats = stats
+		self.reward = False
+		
 		if self.stats:
 			self.positions = []
 
@@ -39,9 +41,8 @@ class Agent(object):
 		self.action_angle = 0.0
 		self.action_speed = 0.0
 		self.wall = self.world.computeWallInformation(self.position, self.agent_direction)
-		self.reward = False
 		self.world.reward_found = False
-		self.model.setPosition(self.direction, self.distance, self.position, self.wall)
+		self.model.setPosition(self.direction, self.distance, self.position, self.wall, self.agent_direction)
 		self.n_steps.append(float(0))
 
 		if self.stats:
@@ -95,12 +96,11 @@ class Agent(object):
 		
 
 	def step(self):
-		self.action_angle, d = self.model.getAction()		
-		self.action_speed = self.vitesse_max/(1.+np.exp(-self.d*d))
-		#print self.action_angle, self.action_speed
+		self.action_angle, self.action_speed = self.model.getAction()		
+		#self.action_speed = self.vitesse_max/(1.+np.exp(-self.d*d))		
 		self.update()
 		self.learn()
-		self.model.setPosition(self.direction, self.distance, self.position, self.wall)
+		self.model.setPosition(self.direction, self.distance, self.position, self.wall, self.agent_direction)
 		self.n_steps[-1] += 1			
 		if self.stats:
 			self.getStats()
@@ -122,7 +122,7 @@ class World(object):
 	def __init__(self):		
 		self.landmark_position = np.array([0.1, 0.0])
 		self.reward_position = np.array([0., 0.5])
-		self.reward_size = 0.15 # Radius of the reward position
+		self.reward_size = 0.1 # Radius of the reward position
 		tmp = np.arange(0, 2*np.pi, 0.1)
 		self.reward_circle = np.vstack((np.cos(tmp), np.sin(tmp))).T * self.reward_size + self.reward_position
 		self.start_position = np.array([0.0, -0.5])
@@ -133,7 +133,7 @@ class World(object):
 	def getReward(self, position):
 		self.distance = np.sqrt(np.sum(np.power(position-self.reward_position, 2)))
 		if self.distance <= self.reward_size:
-			if self.distance <= self.reward_size/2.:
+			if self.distance <= self.reward_size:
 				self.reward_found = True
 			return 1.0
 		else:

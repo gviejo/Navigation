@@ -122,7 +122,7 @@ class World(object):
 	def __init__(self):		
 		self.landmark_position = np.array([0.1, 0.0])
 		self.reward_position = np.array([0., 0.5])
-		self.reward_size = 0.1 # Radius of the reward position
+		self.reward_size = 0.05 # Radius of the reward position
 		tmp = np.arange(0, 2*np.pi, 0.1)
 		self.reward_circle = np.vstack((np.cos(tmp), np.sin(tmp))).T * self.reward_size + self.reward_position
 		self.start_position = np.array([0.0, -0.5])

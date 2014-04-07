@@ -25,7 +25,7 @@ parameters = { 'nlc': 100,		 		    # Number of landmarks cells
 				'eta': 0.1,				    # Learning rate
 				'lambda': 0.1,				# Eligibility trace decay factor
 				'gamma' : 0.8,
-				'theta_pc': 0.3,			# Activity threshold for place cells node linking
+				'theta_pc': 0.4,			# Activity threshold for place cells node linking
 				'theta_node': 0.3,			# Activity threshold for node creation
 				'alpha': 0.7, 				# Decay factor of the goal value
 				'npc': 1681,				# Number of simulated Place cells
@@ -41,8 +41,7 @@ def test():
 	agent.start()
 	while not agent.world.reward_found and agent.n_steps[-1] < 1000:		
 		agent.step()
-		#print plan.path
-		#print plan.action, plan.speed
+
 	t2 = time()
 
 	print t2-t1

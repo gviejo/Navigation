@@ -145,12 +145,10 @@ class Planning(Expert):
 		# Planning
 		self.edges = dict({0:[]}) # Links between nodes
 		self.values = dict() # Weight associated to each nodes, should change every time step
-		self.path = []
+		self.path = []		
 		# Return 
 		self.action = 0.0
 		self.speed = 0.1
-
-		self.debug = False
 
 	def setCellInput(self, direction, distance, position, wall, agent_direction = 0):
 		if np.max(position)>1.0 or np.min(position)<-1.0: raise Warning("Place cells position should be normalized between [-1,1]")
@@ -180,25 +178,34 @@ class Planning(Expert):
 		self.edges[self.current_node].append(self.nb_nodes)
 		self.values[self.nb_nodes] = 0.0
 		self.nodes_position[self.nb_nodes] = np.mean(self.pc_position[ind], 0)		
-		self.current_node = self.nb_nodes		
+		self.current_node = self.nb_nodes
+
+	def createGoalNode(self):
+		self.nb_nodes+=1
+		ind = np.argmax(self.pc)
+		self.pc_nodes[self.nb_nodes] = dict({ind:self.pc[ind]})
+		self.nodes_position[self.nb_nodes] = self.pc_position[ind]
+		self.nodes[self.nb_nodes] = np.power(self.pc[ind], 2)
+		self.edges[self.nb_nodes] = [self.current_node]
+		self.edges[self.current_node].append(self.nb_nodes)
+		for i in self.values.iterkeys(): self.values[i] = 0.0
+		self.values[self.nb_nodes] = 1.0
+		self.current_node = self.nb_nodes
+		self.goal_node = self.nb_nodes
+		map(lambda x: self.propagate(x, [self.current_node], self.parameters['alpha']), self.edges[self.current_node])
 
 	def connectNode(self):
 		new_node = np.argmax(self.nodes.values())+1
 		if self.current_node not in self.edges[new_node] and new_node != self.current_node:
 			self.edges[new_node].append(self.current_node)
 			self.edges[self.current_node].append(new_node)		
-		self.current_node = new_node
-		if self.goal_found: map(lambda x: self.propagate(x, [0, self.goal_node], self.parameters['alpha']), self.edges[self.goal_node])
+		self.current_node = new_node		
 
 	def learn(self, action, reward):
 		super(Planning, self).learn(action, reward)		
 		if reward and not self.goal_found:
-			self.goal_found = True
-			self.createNewNode()
-			self.goal_node = self.current_node
-			for i in self.values.iterkeys(): self.values[i] = 0.0
-			self.values[self.current_node] = 1.0		
-			map(lambda x: self.propagate(x, [self.current_node], self.parameters['alpha']), self.edges[self.current_node])		
+			self.goal_found = True			
+			self.createGoalNode()			
 
 	def propagate(self, new_node, visited, value):
 		if self.values[new_node]<value: self.values[new_node] = value
@@ -218,9 +225,6 @@ class Planning(Expert):
 				self.path = []
 				self.exploreGraph(self.edges[self.current_node], [0, self.current_node])			
 				self.computeActionAngle()
-				if self.debug:
-					print self.path
-					print (self.action, self.speed)
 				return (self.action, self.speed)
 		else : 
 		 	return (np.random.uniform(0,2*np.pi), np.random.uniform(0, 1)*self.speed)

@@ -70,10 +70,14 @@ class Agent(object):
 		""" New position of the agent in the allocentric coordinate of the 
 		world. position must be between [-1,1] so one simple condition to
 		keep boundaries """
-		self.position[0] += np.cos(self.agent_direction) * self.action_speed
-		self.position[1] += np.sin(self.agent_direction) * self.action_speed
-		self.position[self.position>1.0] = 1.0
-		self.position[self.position<-1.0] = -1.0
+		new_position = self.position.copy()
+		new_position[0] += np.cos(self.agent_direction) * self.action_speed
+		new_position[1] += np.sin(self.agent_direction) * self.action_speed		
+		self.position = self.world.checkPosition(self.position, new_position)
+		#self.position[0] += np.cos(self.agent_direction) * self.action_speed
+		#self.position[1] += np.sin(self.agent_direction) * self.action_speed
+		#self.position[self.position>1.0] = 1.0
+		#self.position[self.position<-1.0] = -1.0
 
 	def update(self):
 		""" Fonction to move the agent in a new position
@@ -129,6 +133,7 @@ class World(object):
 		self.start_direction = np.pi/2.
 		self.distance = np.sqrt(np.sum(np.power(self.start_position-self.reward_position, 2)))  # Distance between the agent and the reward
 		self.reward_found = False
+		self.walls = dict()
 
 	def getReward(self, position):
 		self.distance = np.sqrt(np.sum(np.power(position-self.reward_position, 2)))
@@ -154,6 +159,57 @@ class World(object):
 		elif ind == 1 and position[1] < 0.0:
 			return np.array([-(np.pi/2.)-angle, distance])
 
+	def checkPosition(self, old_position, new_position):
+		new_position[new_position>1.0] = 1.0
+		new_position[new_position<-1.0] = -1.0
+		return new_position
 
 
-		
+class Maze(World):
+
+	def __init__(self):
+		self.landmark_position = np.array([0.5, 0.5])
+		self.reward_position = np.array([-0.5, 0.5])
+		self.reward_size = 0.15
+		tmp = np.arange(0, 2*np.pi, 0.1)
+		self.reward_circle = np.vstack((np.cos(tmp), np.sin(tmp))).T * self.reward_size + self.reward_position
+		self.start_position = np.array([-0.5, -0.5])
+		self.start_direction = 0.0
+		self.distance = np.sqrt(np.sum(np.power(self.start_position-self.reward_position, 2)))
+		self.reward_found = False
+		# Wall
+		self.walls = dict({1:np.array([[-1.0,0.0],[-0.4,0.0]]),
+						   2:np.array([[0.4,0.0],[1.0,0.0]])})
+
+	def checkPosition(self, old_position, new_position):
+		super(Maze, self).checkPosition(old_position, new_position)
+		new_position[new_position>1.0] = 1.0
+		new_position[new_position<-1.0] = -1.0
+		for i in self.walls.iterkeys():
+			I = self.intersect(self.walls[i][0], self.walls[i][1], old_position, new_position)
+			if I is not False:
+				new_position = old_position + 0.1 * (old_position - I)
+				new_position[new_position>1.0] = 1.0
+				new_position[new_position<-1.0] = -1.0
+				return new_position
+		return new_position
+
+
+	def intersect(self, A1, A2, B1, B2):
+		""" intersection between line A and B
+		A1 and A2 are two points in line A
+		Return None if parallel lines
+		Return (Cx, Cy) intersection coordinates
+		"""
+		if (A1[0]-A2[0])*(B1[1]-B2[1]) - (A1[1]-A2[1])*(B1[0]-B2[0]) == 0:
+			return False
+		else:
+			x = ((A1[0]*A2[1]-A1[1]*A2[0])*(B1[0]-B2[0])-(A1[0]-A2[0])*(B1[0]*B2[1]-B1[1]*B2[0]))/((A1[0]-A2[0])*(B1[1]-B2[1])-(A1[1]-A2[1])*(B1[0]-B2[0]))
+			y = ((A1[0]*A2[1]-A1[1]*A2[0])*(B1[1]-B2[1])-(A1[1]-A2[1])*(B1[0]*B2[1]-B1[1]*B2[0]))/((A1[0]-A2[0])*(B1[1]-B2[1])-(A1[1]-A2[1])*(B1[0]-B2[0]))
+			I = np.array([x, y])			
+			c1 = np.sqrt(np.sum(np.power(I-A1, 2))) < np.sqrt(np.sum(np.power(A2-A1, 2)))
+			c2 = np.sqrt(np.sum(np.power(I-B1, 2))) < np.sqrt(np.sum(np.power(B2-B1, 2)))
+			if c1 and c2:
+				return I
+			else:
+				return False

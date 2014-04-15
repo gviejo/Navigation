@@ -15,7 +15,7 @@ import sys
 class Expert(object):
 
 	def __init__(self):
-		self.parameters = dict()
+		self.parameters = dict({'speed':0.1})
 
 	def setParameter(self, name, value):
 		if name in self.parameters.keys() : 			
@@ -31,11 +31,11 @@ class Expert(object):
 		pass
 
 	def computeNextAction(self):
-		return (np.random.uniform(0,2*np.pi), np.random.uniform(0, 1))
+		return (np.random.uniform(0,2*np.pi), np.random.uniform(0, 1)*self.parameters['speed'])
 
 class Taxon(Expert):
 
-	def __init__(self, parameters):
+	def __init__(self, parameters={}):
 		self.parameters = { 'nlc': 100,		 		    # Number of landmarks cells
 							'sigma_lc': 0.475,			# Normalized landmark width
 							'sigma_vc': 0.001, 			# Visual cell width
@@ -43,7 +43,8 @@ class Taxon(Expert):
 							'nac': 36,					# Standard deviation of the generalization profile
 							'eta': 0.001,				# Learning rate
 							'lambda': 0.76,				# Eligibility trace decay factor
-							'gamma' : 0.8 }				# Discount factor
+							'gamma' : 0.8,				# Discount factor
+							'speed' : 0.1 }				
 		self.setAllParameters(parameters)							
 		# Landmarks cells
 		self.lc_direction = np.arange(-np.pi, np.pi, (2*np.pi)/float(self.parameters['nlc']))
@@ -71,7 +72,7 @@ class Taxon(Expert):
 		self.ltrace = list()
 		self.lW = list()
 
-	def setCellInput(self, direction, distance, position, wall):
+	def setCellInput(self, direction, distance, position, wall, agent_direction = 0):
 		""" Direction should be in [-pi, pi] interval 
 		Null angle is the curent direction of the agent"""
 		delta = np.arccos(np.cos(direction)*np.cos(self.lc_direction)+np.sin(direction)*np.sin(self.lc_direction))		
@@ -91,6 +92,7 @@ class Taxon(Expert):
 		xy = [(self.ac*np.sin(self.ac_direction)).sum(), (self.ac*np.cos(self.ac_direction)).sum()]
 		self.action = np.arctan2(xy[0], xy[1])
 		self.norm = np.sqrt(np.sum(np.power(xy, 2)))
+		self.norm = self.parameters['speed']/(1.+np.exp(-self.norm))			
 		## TO REMOVE
 		self.lac.append(self.ac)
 		##############
@@ -122,12 +124,13 @@ class Taxon(Expert):
 	
 class Planning(Expert):
 
-	def __init__(self, parameters):
+	def __init__(self, parameters={}):
 		self.parameters = { 'theta_pc': 0.2,			# Activity threshold for place cells node linking
 							'theta_node': 0.3,			# Activity threshold for node creation
 							'alpha': 0.7, 				# Decay factor of the goal value
 							'npc': 1681,				# Number of simulated Place cells
-							'sigma_pc': 0.2 }				# Place field size
+							'sigma_pc': 0.2, 
+							'speed' : 0.1 }				# Place field size
 		self.setAllParameters(parameters)
 		self.direction = None # Direction of the agent in a allocentric frame [-pi, pi]
 		self.position = None
@@ -148,7 +151,6 @@ class Planning(Expert):
 		self.path = []		
 		# Return 
 		self.action = 0.0
-		self.speed = 0.1
 
 	def setCellInput(self, direction, distance, position, wall, agent_direction = 0):
 		if np.max(position)>1.0 or np.min(position)<-1.0: raise Warning("Place cells position should be normalized between [-1,1]")
@@ -225,9 +227,9 @@ class Planning(Expert):
 				self.path = []
 				self.exploreGraph(self.edges[self.current_node], [0, self.current_node])			
 				self.computeActionAngle()
-				return (self.action, self.speed)
+				return (self.action, self.parameters['speed'])
 		else : 
-		 	return (np.random.uniform(0,2*np.pi), np.random.uniform(0, 1)*self.speed)
+		 	return (np.random.uniform(0,2*np.pi), np.random.uniform(0, 1)*self.parameters['speed'])
 
 	def exploreGraph(self, next_nodes, visited):		
 		next_nodes = list(set(next_nodes)-set(visited))		

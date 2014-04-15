@@ -21,7 +21,7 @@ parameters = { 'nlc': 100,		 		    # Number of landmarks cells
 				'sigma_lc': 0.1,			# Normalized landmark width
 				'sigma_vc': 0.04,    	    # Visual cell width
 				'sigma':0.1,				# Action cell width
-				'nac': 36,					# Standard deviation of the generalization profileKachemire1!
+				'nac': 36,					# Standard deviation of the generalization profile
 				'sigma_pc': 0.2,
 				'epsilon': 0.01
 				 }	
@@ -30,7 +30,7 @@ parameters = { 'nlc': 100,		 		    # Number of landmarks cells
 agent = Agent(Dolle(parameters), World(), parameters, stats = True)
 
 t1 = time()
-for i in xrange(100):
+for i in xrange(10):
 	print i
 	if i%30:
 		agent.stats = False

@@ -7,9 +7,10 @@ Copyright (c) 2013 Guillaume VIEJO. All rights reserved.
 """
 
 from itertools import izip
+import pyximport
+pyximport.install()
 from Expert import Taxon, Planning, Expert
 import numpy as np
-import sys
 
 class Model(object):
 
@@ -27,25 +28,24 @@ class Model(object):
 
 class Dolle(Model):
 
-	def __init__(self, parameters):
+	def __init__(self, experts, parameters):
 		self.parameters = {	'epsilon': 0.01,
 							'gamma': 0.8,
 							'lambda': 0.76,
 							'nlc':100 }		
 		self.setAllParameters(parameters)
-		self.experts = {
-						#'t':Taxon(parameters), 
-						'p':Planning(parameters),
-						#'e':Expert()
-						}
+		self.experts = {'t':Taxon(), 
+						'p':Planning(),
+						'e':Expert()}
+		self.experts = dict(filter(lambda i:i[0] in experts, self.experts.iteritems())) # Which expert to keep								
 		self.n_ex = len(self.experts.keys()) # Number of experts
 		self.k_ex = self.experts.keys() # Keys of experts | faster to declare here
 		self.n_lc = self.parameters['nlc'] # NUmber of landmarks cells		
 		self.n_nodes = 0 # Number of nodes | not constant
-		self.actions = dict.fromkeys(self.experts.keys()) # Proposed action from each expert
+		self.actions = dict.fromkeys(self.k_ex) # Proposed action from each expert
 		self.action_angle = None
 		self.action_distance = None
-		self.g = dict() # Gate value
+		self.g = [0.0]*self.n_ex # Gate value
 		self.g_max = [] # Maximum value
 		self.winner = None # Winner expert 
 		self.w_nodes = dict() 
@@ -53,7 +53,8 @@ class Dolle(Model):
 		self.trace_lc = dict()
 		self.trace_nodes = dict()		
 		self.psi = lambda x: np.exp(-x**2.)-np.exp(-np.pi/2.)
-		for k in self.k_ex: 
+		for k in self.k_ex:
+			self.experts[k].setAllParameters(self.parameters)
 			self.w_nodes[k] = dict()  # Empty dict for weight between nodes and gate
 			self.w_lc[k] = np.random.uniform(0,0.01, size = (1,self.n_lc)) # array of w for lc and gate
 			self.trace_lc[k] = np.zeros((1,self.n_lc))
@@ -62,32 +63,29 @@ class Dolle(Model):
 	def setPosition(self, direction, distance, position, wall, agent_direction = 0):	
 		for k in self.k_ex:
 			self.experts[k].setCellInput(direction, distance, position, wall, agent_direction)
-		# if 'p' in self.k_ex and self.n_nodes != len(self.experts['p'].nodes.keys()):
-		# 	self.n_nodes = len(self.experts['p'].nodes.keys())
-		# 	new_nodes = set(self.experts['p'].nodes.keys())-set(self.w_nodes.keys())
-		# 	for e in self.k_ex: 
-		# 		self.w_nodes[e].update(izip(new_nodes,np.random.uniform(0,0.01,size=len(new_nodes))))			
-		# 		self.trace_nodes[e].update(izip(new_nodes,np.zeros(len(new_nodes))))
+		if 'p' in self.k_ex and self.n_nodes != len(self.experts['p'].nodes.keys()):
+			self.n_nodes = len(self.experts['p'].nodes.keys())
+			new_nodes = set(self.experts['p'].nodes.keys())-set(self.w_nodes.keys())
+			for e in self.k_ex: 
+				self.w_nodes[e].update(izip(new_nodes,np.random.uniform(0,0.01,size=len(new_nodes))))			
+				self.trace_nodes[e].update(izip(new_nodes,np.zeros(len(new_nodes))))
 
-	def computeGateValue(self):
-		self.g = dict()
-		for e in self.k_ex:			
-			tmp = np.array([self.experts['p'].nodes[i]*self.w_nodes[e][i] for i in self.w_nodes[e].keys()])
-			self.g[(np.dot(self.w_lc[e], self.experts['t'].lc)+np.sum(tmp))[0]] = e
+	def computeGateValue(self):		
+		for i in xrange(self.n_ex):			
+			tmp = np.array([self.experts['p'].nodes[j]*self.w_nodes[self.k_ex[i]][j] for j in self.w_nodes[self.k_ex[i]].keys()])
+			self.g[i] = (np.dot(self.w_lc[self.k_ex[i]], self.experts['t'].lc)+np.sum(tmp))[0]
 
 	def retrieveAction(self):
 		super(Dolle, self).retrieveAction()
 		for e in self.k_ex:
 			self.actions[e] = self.experts[e].computeNextAction()
-		#self.computeGateValue()
+		self.computeGateValue()
 		
 	def getAction(self):
 		self.retrieveAction()
-		# CHOOSE EXPERTS				
-		self.winner = 'p'
-		#self.winner = self.g[np.max(self.g.keys())]
-		#self.winner = self.g.values()[np.random.randint(len(self.g.values()))]
-		#self.g_max.append(np.max(self.g.keys()))
+		# CHOOSE EXPERTS						
+		self.winner = self.k_ex[np.argmax(self.g)]
+		self.g_max.append(np.max(self.g))
 		self.action_angle, self.action_distance = self.actions[self.winner]		
 
 		#self.updateTrace()

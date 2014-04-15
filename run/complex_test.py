@@ -33,7 +33,7 @@ parameters = { 'nlc': 100,		 		    # Number of landmarks cells
 				'epsilon': 0.01
 				 }	
 
-agent = Agent(Dolle(parameters), Maze(), parameters, stats = True)
+agent = Agent(Dolle(('p'), parameters), Maze(), parameters, stats = True)
 plan = agent.model.experts['p']
 
 def test():

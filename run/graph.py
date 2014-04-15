@@ -34,7 +34,7 @@ parameters = { 'nlc': 100,		 		    # Number of landmarks cells
 				 }	
 
 
-agent = Agent(Dolle(parameters), World(), parameters, stats = True)
+agent = Agent(Dolle(('p'), parameters), World(), parameters, stats = True)
 plan = agent.model.experts['p']
 agent.start()
 

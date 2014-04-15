@@ -23,12 +23,9 @@ class Agent(object):
 		self.world = world
 		self.parameters = parameters
 		self.model.setAllParameters(self.parameters)
-		self.n_steps = [] # NUmber of step before reaching reward
-		self.d = 0.8
-		self.vitesse_max = 0.2
-		self.stats = stats
+		self.n_steps = [] # NUmber of step before reaching reward			
 		self.reward = False
-		
+		self.stats = stats
 		if self.stats:
 			self.positions = []
 
@@ -52,7 +49,7 @@ class Agent(object):
 			self.distances = [list([self.distance, self.world.distance])]
 			self.experts = list(['t'])
 			self.actions = list([[self.action_angle, self.action_speed]])
-			self.gates = dict({k:[] for k in self.model.k_ex})
+			self.gates = []
 			self.walls = [list(self.wall)]
 			self.rewards = []
 			self.speeds = []
@@ -100,8 +97,8 @@ class Agent(object):
 		
 
 	def step(self):
-		self.action_angle, self.action_speed = self.model.getAction()		
-		#self.action_speed = self.vitesse_max/(1.+np.exp(-self.d*d))		
+		" Only function to call when instanciating the agent"
+		self.action_angle, self.action_speed = self.model.getAction()				
 		self.update()
 		self.learn()
 		self.model.setPosition(self.direction, self.distance, self.position, self.wall, self.agent_direction)
@@ -115,7 +112,7 @@ class Agent(object):
 		self.distances.append(list([self.distance, self.world.distance]))
 		self.experts.append(self.colors[self.model.winner])
 		self.actions.append(list([self.action_angle, self.action_speed]))
-		#for k in self.model.k_ex: self.gates[k].append(dict(zip(self.model.g.values(),self.model.g.keys()))[k])
+		self.gates.append(np.exp(self.model.g)/(np.exp(self.model.g).sum()))
 		self.winners.append((self.model.winner=='t')*1.0)
 		#self.walls.append(list(self.wall))
 		self.rewards.append(self.reward)

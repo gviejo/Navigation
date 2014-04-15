@@ -34,11 +34,22 @@ parameters = { 'nlc': 100,		 		    # Number of landmarks cells
 				 }	
 
 agent = Agent(Dolle(('p'), parameters), World(), parameters, stats = True)
+agent.start()
 plan = agent.model.experts['p']
+
+def learn():
+	t1 = time()
+	for i in xrange(10):
+		print "Trial :" + str(i)
+		while not agent.world.reward_found and agent.n_steps[-1] < 1000:
+			agent.step()
+
+	PLOT_LEARN()
+
 
 def test():
 	t1 = time()
-	agent.start()
+	
 	while not agent.world.reward_found and agent.n_steps[-1] < 1000:		
 		agent.step()
 
@@ -47,6 +58,11 @@ def test():
 	print t2-t1
 	
 	PLOT()
+
+def PLOT_LEARN():
+	figure(figsize = (17, 11))
+	ax1 = subplot2grid((2,3),(0,0), colspan = 1, rowspan = 1)
+	
 
 def PLOT():
 	position = map(np.array, agent.positions)
@@ -90,4 +106,4 @@ def PLOT():
 	show()
 
 
-test()
+learn()

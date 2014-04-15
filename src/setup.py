@@ -71,10 +71,6 @@ class Agent(object):
 		new_position[0] += np.cos(self.agent_direction) * self.action_speed
 		new_position[1] += np.sin(self.agent_direction) * self.action_speed		
 		self.position = self.world.checkPosition(self.position, new_position)
-		#self.position[0] += np.cos(self.agent_direction) * self.action_speed
-		#self.position[1] += np.sin(self.agent_direction) * self.action_speed
-		#self.position[self.position>1.0] = 1.0
-		#self.position[self.position<-1.0] = -1.0
 
 	def update(self):
 		""" Fonction to move the agent in a new position
@@ -123,7 +119,7 @@ class World(object):
 	def __init__(self):		
 		self.landmark_position = np.array([0.1, 0.0])
 		self.reward_position = np.array([0., 0.5])
-		self.reward_size = 0.05 # Radius of the reward position
+		self.reward_size = 0.08 # Radius of the reward position
 		tmp = np.arange(0, 2*np.pi, 0.1)
 		self.reward_circle = np.vstack((np.cos(tmp), np.sin(tmp))).T * self.reward_size + self.reward_position
 		self.start_position = np.array([0.0, -0.5])

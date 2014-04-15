@@ -70,10 +70,20 @@ class Dolle(Model):
 				self.w_nodes[e].update(izip(new_nodes,np.random.uniform(0,0.01,size=len(new_nodes))))			
 				self.trace_nodes[e].update(izip(new_nodes,np.zeros(len(new_nodes))))
 
-	def computeGateValue(self):		
-		for i in xrange(self.n_ex):			
-			tmp = np.array([self.experts['p'].nodes[j]*self.w_nodes[self.k_ex[i]][j] for j in self.w_nodes[self.k_ex[i]].keys()])
-			self.g[i] = (np.dot(self.w_lc[self.k_ex[i]], self.experts['t'].lc)+np.sum(tmp))[0]
+	def computeGateValue(self):
+		# TO REMOVE
+		g = dict({'t':1.0, 'p':1.0, 'e':0.25})
+		tmp = np.array([g[k] for k in self.k_ex])
+		tmp = tmp/tmp.sum()
+		ind = np.sum(tmp.cumsum()<np.random.rand())
+		self.g = np.zeros(self.n_ex)
+		self.g[ind] = 1.0
+		###
+		# tmp2 = 0.0
+		# for i in xrange(self.n_ex):			
+		# 	tmp1 = np.array([self.experts['p'].nodes[j]*self.w_nodes[self.k_ex[i]][j] for j in self.w_nodes[self.k_ex[i]].keys()])			
+		# 	if 't' in self.k_ex: tmp2 = np.dot(self.w_lc[self.k_ex[i]], self.experts['t'].lc)
+		# 	self.g[i] = tmp2+np.sum(tmp1)
 
 	def retrieveAction(self):
 		super(Dolle, self).retrieveAction()

@@ -31,7 +31,7 @@ class Expert(object):
 		pass
 
 	def computeNextAction(self):
-		return (np.random.uniform(0,2*np.pi), np.random.uniform(0, 1)*self.parameters['speed'])
+		return (np.random.uniform(-np.pi, np.pi), np.random.uniform(0, 1)*self.parameters['speed'])
 
 class Taxon(Expert):
 

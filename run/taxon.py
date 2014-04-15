@@ -39,7 +39,7 @@ agent = Agent(Dolle(('t', 'e'), parameters), World(), parameters, stats = True)
 def test():
 	t1 = time()
 	agent.start()
-	for i in xrange(2000):
+	for i in xrange(500):
 		agent.step()		
 	t2 = time()
 

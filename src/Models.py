@@ -1,15 +1,17 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 #!/usr/bin/python
 # encoding: utf-8
 """
 Models.py    
 
-Copyright (c) 2013 Guillaume VIEJO. All rights reserved.
+Copyright (c) 2014 Guillaume VIEJO. All rights reserved.
 """
 
 from itertools import izip
-import pyximport
-pyximport.install()
-from Expert import Taxon, Planning, Expert
+
+from cExpert import *
 import numpy as np
 
 class Model(object):
@@ -60,7 +62,7 @@ class Dolle(Model):
 			self.trace_lc[k] = np.zeros((1,self.n_lc))
 			self.trace_nodes[k] = dict()		
 
-	def setPosition(self, direction, distance, position, wall, agent_direction = 0):	
+	def setPosition(self, direction, distance, position, wall, agent_direction = 0.0):	
 		for k in self.k_ex:
 			self.experts[k].setCellInput(direction, distance, position, wall, agent_direction)
 		if 'p' in self.k_ex and self.n_nodes != len(self.experts['p'].nodes.keys()):

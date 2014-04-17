@@ -39,10 +39,11 @@ agent = Agent(Dolle(('t', 'e'), parameters), World(), parameters, stats = True)
 
 def learn():
 	t1 = time()
-	for i in xrange(20):
+	for i in xrange(10):
 		print "Trial :" + str(i)
 		agent.start()
-		while not agent.world.reward_found and agent.n_steps[-1] < 1000:
+		#while not agent.world.reward_found and agent.n_steps[-1] < 1000:
+		while agent.n_steps[-1] < 1000:
 			agent.step()
 	t2 = time()
 	print t2 - t1
@@ -59,8 +60,8 @@ def test():
 
 def PLOT_LEARN():
 	position = map(np.array, agent.positions)
-	trace = np.array(agent.model.experts['t'].ltrace)
-	W = np.array(agent.model.experts['t'].lW)	
+	trace = agent.model.experts['t'].trace
+	W = agent.model.experts['t'].W
 	rewards = np.array(agent.rewards)*1.0
 	figure(figsize = (17, 11))
 
@@ -72,11 +73,11 @@ def PLOT_LEARN():
 	ax1.add_patch(c)
 
 	subplot2grid((3,3),(1,0), colspan = 1)	
-	imshow(trace[-1], interpolation='nearest')
+	imshow(trace, interpolation='nearest')
 	title("trace")
 
 	subplot2grid((3,3),(2,0), colspan = 1)
-	imshow(W[-1], interpolation = 'nearest')
+	imshow(W, interpolation = 'nearest')
 	title("Weight")
 
 	subplot2grid((3,3),(0,1))
@@ -87,15 +88,9 @@ def PLOT_LEARN():
 	show()
 
 def PLOT():
-	position = np.array(agent.positions)
-	direction = np.array(agent.directions)
-	distance = np.array(agent.distances)
-	lcs = np.array(agent.model.experts['t'].lcs).T
-	lac = np.array(agent.model.experts['t'].lac).T
-	ldelta = np.array(agent.model.experts['t'].ldelta).T
+	position = np.array(agent.positions)	
+	distance = np.array(agent.distances)	
 	actions = np.array(agent.actions)
-	lvc = np.array(agent.model.experts['t'].lvc).T
-	wall = np.array(agent.walls)
 	trace = np.array(agent.model.experts['t'].ltrace)
 	W = np.array(agent.model.experts['t'].lW)	
 	gates = np.array(agent.gates)

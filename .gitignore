@@ -24,3 +24,5 @@ Makefile
 *.dat
 *.tar
 *.png
+*.so
+clearn

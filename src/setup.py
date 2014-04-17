@@ -5,7 +5,7 @@ setup.py
 	
 
 
-Copyright (c) 2013 Guillaume VIEJO. All rights reserved.
+Copyright (c) 2014 Guillaume VIEJO. All rights reserved.
 """
 
 

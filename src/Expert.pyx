@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 #!/usr/bin/python
 # encoding: utf-8
 """
@@ -5,12 +8,12 @@ Expert.py
 
     
 
-Copyright (c) 2014 Guillaume VIEJO. All rights reserved.
+Copyright (c) 2013 Guillaume VIEJO. All rights reserved.
 """
 
 import numpy as np
 from itertools import izip
-
+import sys
 
 class Expert(object):
 

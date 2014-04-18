@@ -22,14 +22,14 @@ class Expert(object):
 	def __init__(self):
 		self.parameters = dict({'speed':0.1})
 
-	def setParameter(self, name, value):
+	def setParameter(self, str name, double value):
 		if name in self.parameters.keys() : 			
 			self.parameters[name] = value
 
-	def setAllParameters(self, parameters):		
+	def setAllParameters(self, dict parameters):		
 		for i in parameters.keys(): self.setParameter(i, parameters[i])
 
-	def learn(self, angle,  reward):
+	def learn(self, double angle,  double reward):
 		pass
 
 	def setCellInput(self, double direction, double distance, np.ndarray position, np.ndarray wall, double agent_direction = 0.0):
@@ -72,13 +72,15 @@ class Taxon(Expert):
 	def setCellInput(self, double direction, double distance, np.ndarray position, np.ndarray wall, double agent_direction = 0.0):
 		""" Direction should be in [-pi, pi] interval 
 		Null angle is the curent direction of the agent"""
+		cdef np.ndarray delta		
 		delta = np.arccos(np.cos(direction)*np.cos(self.lc_direction)+np.sin(direction)*np.sin(self.lc_direction))		
 		self.lc = np.exp(-(np.power(delta,2))/(2*(self.parameters['sigma_lc']/float(distance))**2))
 		delta = np.arccos(np.cos(wall[0])*np.cos(self.vc_direction)+np.sin(wall[0])*np.sin(self.vc_direction))
 		self.vc = np.exp(-(np.power(delta, 2))/(2*(self.parameters['sigma_vc']/float(wall[1]-0.0001))**2))
 		self.computeActionActivity()		
 
-	def computeActionActivity(self):		
+	def computeActionActivity(self):
+		cdef list xy
 		self.ac = np.dot(self.W, self.lc) - self.vc
 		self.ac = np.tanh(self.ac)
 		xy = [(self.ac*np.sin(self.ac_direction)).sum(), (self.ac*np.cos(self.ac_direction)).sum()]
@@ -86,14 +88,16 @@ class Taxon(Expert):
 		self.norm = np.sqrt(np.sum(np.power(xy, 2)))
 		self.norm = self.parameters['speed']/(1.+np.exp(-self.norm))			
 
-	def updateTrace(self, action):
+	def updateTrace(self, double action):
+		cdef np.ndarray delta, ac
+
 		delta = np.arccos(np.cos(action)*np.cos(self.ac_direction)+np.sin(action)*np.sin(self.ac_direction))		
 		ac = np.exp(-(np.power(delta,2))/(2*self.parameters['sigma']**2))		
 		self.trace = self.parameters['lambda']*self.trace+np.outer(ac, self.lc)
 
-	def learn(self, action, reward):
+	def learn(self, double action, double reward):
 		""" Action performed selected from a mixture of experts"""
-		super(Taxon, self).learn(action, reward)
+		super(Taxon, self).learn(action, reward)		
 		self.updateTrace(action)
 		self.delta = reward + self.parameters['gamma']*self.ac.max()-self.ac		
 		self.W = self.W+self.parameters['eta']*(np.tile(self.delta, (self.parameters['nlc'],1))).T*self.trace

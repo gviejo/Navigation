@@ -11,7 +11,9 @@ from distutils.core import setup
 from Cython.Distutils import build_ext
 from distutils.extension import Extension
 
-ext_modules = [Extension("cExpert", ["Expert.pyx"])]
+ext_modules = [Extension("cExpert", ["Expert.pyx"]), 
+			   Extension("cModels", ["Models.pyx"]),
+			   Extension("cAgents", ["setup.pyx"])]
 
 setup(
 	name = 'test',

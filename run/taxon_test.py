@@ -34,7 +34,6 @@ parameters = { 'nlc': 100,		 		    # Number of landmarks cells
 				'speed':0.1 				# Max Speed
 				 }	
 
-
 agent = Agent(Dolle(('t', 'e'), parameters), World(), parameters, stats = True)
 
 def learn():

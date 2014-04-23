@@ -13,21 +13,23 @@ Copyright (c) 2014 Guillaume VIEJO. All rights reserved.
 import numpy as np
 import sys
 
-from Models import *
+from cModels import *
 
 
 class Agent(object):
 
-	def __init__(self, model, world, parameters, stats = False):
+	def __init__(self, model, world, parameters, stats = "train"):
 		self.model = model
 		self.world = world
 		self.parameters = parameters
-		self.model.setAllParameters(self.parameters)
-		self.n_steps = [] # NUmber of step before reaching reward			
+		self.model.setAllParameters(self.parameters)		
 		self.reward = False
 		self.stats = stats
-		if self.stats:
-			self.positions = []
+		self.colors = dict({'t':(1.0, 0.0, 0.0),'e':(0.0, 0.0, 1.0),'p':(0.0, 1.0, 0.0)})		
+		self.positions = [] # Positions in the world
+		self.n_steps = [] # NUmber of step before reaching reward	
+		self.experts = [] # Experts used at each time step
+		self.gating = [] # Gate value at each time step
 
 	def start(self):
 		self.agent_direction = self.world.start_direction # Relative to a allocentric coordinate from the agent
@@ -39,21 +41,15 @@ class Agent(object):
 		self.action_speed = 0.0
 		self.wall = self.world.computeWallInformation(self.position, self.agent_direction)
 		self.world.reward_found = False
-		self.model.setPosition(self.direction, self.distance, self.position, self.wall, self.agent_direction)
-		self.n_steps.append(float(0))
-
-		if self.stats:
-			self.colors = dict({'t':(1.0, 0.0, 0.0),'e':(0.0, 0.0, 1.0),'p':(0.0, 1.0, 0.0)})
-			self.positions.append([])			
-			self.directions = [self.agent_direction]
-			self.distances = [list([self.distance, self.world.distance])]
-			self.experts = list(['t'])
-			self.actions = list([[self.action_angle, self.action_speed]])
-			self.gates = []
-			self.walls = [list(self.wall)]
-			self.rewards = []
-			self.speeds = []
-			self.winners = []
+		self.model.setPosition(self.direction, self.distance, self.position, self.wall, self.agent_direction)		
+		# Minimum stats is n_steps, positions and experts for training session
+		self.n_steps.append(0)
+		self.positions.append([])
+		self.experts.append([0]*self.model.n_ex)
+		if self.stats == "test":								
+			self.distances = [list([self.distance, self.world.distance])]			
+			self.actions = list([[self.action_angle, self.action_speed]])			
+			self.pgates = []
 
 	def computeDirection(self):
 		"""Counter clockwise angle is computed in an allocentric coordinate 
@@ -86,33 +82,32 @@ class Agent(object):
 	def learn(self):
 		""" Check from class world if agent get reward
 		then update Experts. Reward can be boolean or value"""
-		reward = self.world.getReward(self.position)
-		#print reward
+		reward = self.world.getReward(self.position)		
 		self.reward = reward>0.0
 		self.model.learn(reward)
 		
 
 	def step(self):
-		" Only function to call when instanciating the agent"
+		""" Only function to call when running the agent.
+		The order must be respected for taxon learning """
 		self.action_angle, self.action_speed = self.model.getAction()				
 		self.update()
-		self.learn()
 		self.model.setPosition(self.direction, self.distance, self.position, self.wall, self.agent_direction)
-		self.n_steps[-1] += 1			
+		self.learn()		
+		
 		if self.stats:
 			self.getStats()
 
 	def getStats(self):
 		self.positions[-1].append(list(self.position))
-		self.directions.append(self.agent_direction)
-		self.distances.append(list([self.distance, self.world.distance]))
-		self.experts.append(self.colors[self.model.winner])
-		self.actions.append(list([self.action_angle, self.action_speed]))
-		self.gates.append(np.exp(self.model.g)/(np.exp(self.model.g).sum()))
-		self.winners.append((self.model.winner=='t')*1.0)
-		#self.walls.append(list(self.wall))
-		self.rewards.append(self.reward)
-		self.speeds.append(self.action_speed)
+		self.experts[-1][self.model.k_ex.index(self.model.winner)] += 1
+		self.n_steps[-1] += 1
+		self.gating.append(np.copy(self.model.g))
+		if self.stats == "test":
+			self.distances.append(list([self.distance, self.world.distance]))
+			self.actions.append(list([self.action_angle, self.action_speed]))
+			self.pgates.append(np.exp(self.model.g)/(np.exp(self.model.g).sum()))		
+				
 
 class World(object):
 

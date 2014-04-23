@@ -10,8 +10,8 @@ Copyright (c) 2014 Guillaume VIEJO. All rights reserved.
 """
 
 from itertools import izip
-
 from cExpert import *
+
 import numpy as np
 
 class Model(object):
@@ -38,7 +38,7 @@ class Dolle(Model):
 		self.setAllParameters(parameters)
 		self.experts = {'t':Taxon(), 
 						'p':Planning(),
-						'e':Expert()}
+						'e':Expert()}						
 		self.experts = dict(filter(lambda i:i[0] in experts, self.experts.iteritems())) # Which expert to keep								
 		self.n_ex = len(self.experts.keys()) # Number of experts
 		self.k_ex = self.experts.keys() # Keys of experts | faster to declare here
@@ -63,7 +63,7 @@ class Dolle(Model):
 			self.trace_nodes[k] = dict()		
 
 	def setPosition(self, direction, distance, position, wall, agent_direction = 0.0):	
-		for k in self.k_ex:
+		for k in self.k_ex:			
 			self.experts[k].setCellInput(direction, distance, position, wall, agent_direction)
 		if 'p' in self.k_ex and self.n_nodes != len(self.experts['p'].nodes.keys()):
 			self.n_nodes = len(self.experts['p'].nodes.keys())
@@ -110,7 +110,7 @@ class Dolle(Model):
 				self.trace_nodes[e][i]=l*self.trace_nodes[e][i]+self.experts['p'].nodes[i]*self.psi(self.action_angle-self.actions[e])
 
 	def learn(self, reward):
-		for e in self.k_ex:
+		for e in self.k_ex:			
 			self.experts[e].learn(self.action_angle, reward)
 		# delta = float(reward)+self.parameters['gamma']*np.max(self.g.keys())-self.g_max[-1]
 		# tmp = delta*self.parameters['epsilon']

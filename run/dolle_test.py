@@ -1,5 +1,6 @@
-#!/usr/bin/python
-# encoding: utf-8
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """
 dolle.py
 
@@ -12,29 +13,29 @@ sys.path.append("../src")
 import numpy as np
 from matplotlib import *
 from pylab import *
-from cModels import Dolle
 from cAgents import *
 from time import time
 import matplotlib.patches as mpatches
 
-parameters = { 'nlc': 100,		 		    # Number of landmarks cells
-				'sigma_lc': 0.1,			# Normalized landmark width
-				'sigma_vc': 0.04,    	    # Visual cell width
-				'sigma':0.1,				# Action cell width
-				'nac': 36,					# Standard deviation of the generalization profile
-				'eta': 0.1,				    # Learning rate
-				'lambda': 0.1,				# Eligibility trace decay factor
-				'gamma' : 0.8,
-				'theta_pc': 0.4,			# Activity threshold for place cells node linking
+parameters = {  'nlc': 100,		 		    # Number of landmarks cells
+				'sigma_lc': 0.47,			# Normalized landmark width
+				'nac': 36, 					# Number of action cells				
+				'sigma':0.39,				# Standard deviation of the generalization profile
+				'eta': 0.001,				# Learning rate
+				'lambda': 0.76,				# Eligibility trace decay factor
+				'gamma' : 0.8,				# Future reward discount factor
+				'epsilon': 0.01, 			# Learning rate of the gating network
+				'theta_pc': 0.3,			# Activity threshold for place cells node linking
 				'theta_node': 0.3,			# Activity threshold for node creation
 				'alpha': 0.7, 				# Decay factor of the goal value
 				'npc': 1681,				# Number of simulated Place cells
-				'sigma_pc': 0.2,
-				'epsilon': 0.01,
-				'speed':0.1 				# Max Speed
+				'sigma_pc': 0.1, 			# Place field size
+				
+				'speed':0.1, 				# Max Speed
+				'sigma_vc': 0.04    	    # Visual cell width
 				 }	
 
-agent = Agent(Dolle(('p','t','e'), parameters), World(), parameters)
+agent = Agent(('p','t','e'), parameters)
 
 def learn():
 	t1 = time()

@@ -116,9 +116,11 @@ cdef class Dolle(Model):
 		cdef str e
 		cdef int i
 		for e in self.k_ex:
-			self.trace_lc[e]=self.parameters['lambda']*self.trace_lc[e]+self.psi(self.action_angle-self.actions[e][0])*self.experts['t'].lc
-			for i in self.trace_nodes[e].iterkeys():
-				self.trace_nodes[e][i]=self.parameters['lambda']*self.trace_nodes[e][i]+self.experts['p'].nodes[i]*self.psi(self.action_angle-self.actions[e][0])
+			if 't' in self.k_ex:
+				self.trace_lc[e]=self.parameters['lambda']*self.trace_lc[e]+self.psi(self.action_angle-self.actions[e][0])*self.experts['t'].lc
+			if 'p' in self.k_ex:
+				for i in self.trace_nodes[e].iterkeys():
+					self.trace_nodes[e][i]=self.parameters['lambda']*self.trace_nodes[e][i]+self.experts['p'].nodes[i]*self.psi(self.action_angle-self.actions[e][0])
 
 	cpdef learn(self, float reward):
 		cdef str e

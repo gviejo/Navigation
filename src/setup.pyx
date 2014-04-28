@@ -16,24 +16,28 @@ import numpy as np
 cimport numpy as np
 cimport cython
 #cimport cModels as Models
-from cModels import *
+from cModels import Dolle
 
 cdef class Agent(object):	
-	# cdef public dict parameters, colors
-	# cdef public float reward
-	# cdef public str stats
-	# cdef public list positions, n_steps, experts, gating
+	cdef public dict parameters, colors
+	cdef public float reward, agent_direction, distance, action_angle, action_speed, direction
+	cdef public str stats
+	cdef public list positions, n_steps, experts, gating, distances, actions, pgates
+	cdef public object model, world
+	cdef public np.ndarray landmark_position, position, wall, 
+	cdef public int reward_found
 
-	def __init__(self, model, world, parameters, stats = "train"):
-		self.model = model
-		self.world = world
+	def __init__(self, tuple experts, dict parameters, str stats = "train"):
+		self.model = Models.Dolle(experts, parameters)
+		self.world = World()
 		self.parameters = parameters
 		self.model.setAllParameters(self.parameters)		
 		self.reward = 0.0
+		self.agent_direction = 0.0
 		self.stats = stats
 		self.colors = dict({'t':(1.0, 0.0, 0.0),'e':(0.0, 0.0, 1.0),'p':(0.0, 1.0, 0.0)})		
 		self.positions = [] # Positions in the world
-		self.n_steps = [] # NUmber of step before reaching reward	
+		self.n_steps = [] # Number of step before reaching reward	
 		self.experts = [] # Experts used at each time step
 		self.gating = [] # Gate value at each time step
 

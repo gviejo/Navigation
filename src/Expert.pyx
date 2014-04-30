@@ -23,20 +23,20 @@ cdef class Expert(object):
 	def __cinit__(self):
 		self.parameters = dict({'speed':0.1})
 
-	def setParameter(self, str name, float value):		
+	cpdef setParameter(self, str name, float value):		
 		if name in self.parameters.keys() : 			
 			self.parameters[name] = value
 
-	def setAllParameters(self, dict parameters):		
+	cpdef setAllParameters(self, dict parameters):		
 		for i in parameters.keys(): self.setParameter(i, parameters[i])
 
-	def learn(self, float angle,  float reward):
+	cpdef learn(self, float angle,  float reward):
 		pass
 
-	def setCellInput(self, float direction, float distance, np.ndarray position, np.ndarray wall, float agent_direction = 0.0):
+	cpdef setCellInput(self, float direction, float distance, np.ndarray position, np.ndarray wall, float agent_direction = 0.0):
 		pass
 
-	def computeNextAction(self):
+	cpdef computeNextAction(self):
 		return (np.random.uniform(-np.pi, np.pi), np.random.uniform(0, 1)*self.parameters['speed'])
 
 
@@ -66,7 +66,7 @@ cdef class Taxon(object):
 		self.ac_direction = np.arange(-np.pi, np.pi, (2*np.pi)/float(self.parameters['nac']))
 		self.ac = np.zeros((self.parameters['nac']), dtype=np.double)
 		# Connection
-		self.W = np.random.normal(0.0, 0.9, size=(self.parameters['nac'], self.parameters['nlc']))
+		self.W = np.random.normal(0.0, 0.1, size=(self.parameters['nac'], self.parameters['nlc']))
 		# Proposed direction		
 		self.action = 0.0 # The proposed direction
 		self.norm = 0.0 # The distance if action is choosen
@@ -112,7 +112,7 @@ cdef class Taxon(object):
 		""" Action performed selected from a mixture of experts"""
 		#super(Taxon, self).learn(action, reward)		
 		self.updateTrace(action)
-		self.delta = reward + self.parameters['gamma']*self.ac.max()-action				
+		self.delta = reward + self.parameters['gamma']*self.ac.max()-action		
 		self.W = self.W+self.parameters['eta']*(np.tile(self.delta, (self.parameters['nlc'],1))).T*self.trace
 
 	cpdef computeNextAction(self):

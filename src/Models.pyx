@@ -41,15 +41,15 @@ cdef class Dolle(Model):
 	cdef public str winner	
 	cdef public np.ndarray g
 	
-	def __init__(self, experts, parameters):
+	def __cinit__(self, tuple experts, dict parameters):
 		self.parameters = {	'epsilon': 0.01,
 							'gamma': 0.8,
 							'lambda': 0.76,
 							'nlc':100 }		
 		self.setAllParameters(parameters)
-		self.experts = {'t':Taxon(), 
+		self.experts = {'t':Taxon(),
 						'p':Planning(),
-						'e':Expert()}						
+						'e':Expert()}
 		self.experts = dict(filter(lambda i:i[0] in experts, self.experts.iteritems())) # Which expert to keep								
 		self.n_ex = len(self.experts.keys()) # Number of experts
 		self.k_ex = self.experts.keys() # Keys of experts | faster to declare here

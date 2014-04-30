@@ -28,7 +28,7 @@ cdef class Agent(object):
 	cdef public int reward_found
 
 	def __init__(self, tuple experts, dict parameters, str stats = "train"):
-		self.model = Models.Dolle(experts, parameters)
+		self.model = Dolle(experts, parameters)
 		self.world = World()
 		self.parameters = parameters
 		self.model.setAllParameters(self.parameters)		

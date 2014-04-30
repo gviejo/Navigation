@@ -35,16 +35,17 @@ parameters = {  'nlc': 100,		 		    # Number of landmarks cells
 				'sigma_vc': 0.04    	    # Visual cell width
 				 }	
 
-name = {'p':'Planning','t':'Taxon','e':'Exploratory'}				 
+name = {'p':'Planning','t':'Taxon','e':'Exploratory'}
 
-agent = Agent(('p'), parameters)
+agent = Agent(('p','t','e'), parameters)
 
 def learn():
 	t1 = time()
 	for i in xrange(20):
 		print "Trial :" + str(i)
 		agent.start()
-		while not agent.world.reward_found and agent.n_steps[-1] < 200:
+		#while not agent.world.reward_found and agent.n_steps[-1] < 200:		
+		while agent.n_steps[-1] < 200:		
 			agent.step()
 	t2 = time()
 	print t2 - t1
@@ -52,17 +53,19 @@ def learn():
 
 
 def test():
-	t1 = time()
+	t1 = time()	
 	agent.stats = 'test'
 	agent.start()
-	while not agent.world.reward_found and agent.n_steps[-1] < 200:
-		agent.step()		
+	while not agent.world.reward_found and agent.n_steps[-1] < 200:		
+		agent.step()
 	t2 = time()
 	print t2-t1
 	PLOT_TEST()
 
 def PLOT_LEARN():
 	position = map(np.array, agent.positions)
+	trace = agent.model.experts['t'].trace
+	W = agent.model.experts['t'].W
 	experts = np.array(agent.experts)
 	experts = experts/experts.sum(1, keepdims = True, dtype = np.double)
 	gating = np.array(agent.gating)
@@ -75,6 +78,14 @@ def PLOT_LEARN():
 	scatter(agent.landmark_position[0], agent.landmark_position[1], s = 100, c = 'red')
 	c = mpatches.Circle(agent.world.reward_position, agent.world.reward_size, fc = 'g')
 	ax1.add_patch(c)
+
+	subplot2grid((3,3),(1,0), colspan = 1)	
+	imshow(trace, interpolation='nearest')
+	title("trace")
+
+	subplot2grid((3,3),(2,0), colspan = 1)
+	imshow(W, interpolation = 'nearest')
+	title("Weight")
 
 	subplot2grid((3,3),(0,1), colspan = 1)
 	scatter(agent.model.experts['p'].pc_position[:,0], agent.model.experts['p'].pc_position[:,1], marker = '+', s = 150, c = agent.model.experts['p'].pc, cmap = cm.coolwarm)
@@ -110,6 +121,8 @@ def PLOT_LEARN():
 def PLOT_TEST():
 	position = np.array(agent.positions[-1])
 	distance = np.array(agent.distances)
+	trace = agent.model.experts['t'].trace
+	W = agent.model.experts['t'].W
 	experts = np.array(agent.experts)
 	experts = experts/experts.sum(1, keepdims = True, dtype = np.double)
 	pgates = np.array(agent.pgates)
@@ -122,6 +135,14 @@ def PLOT_TEST():
 	scatter(agent.landmark_position[0], agent.landmark_position[1], s = 100, c = 'red')
 	c = mpatches.Circle(agent.world.reward_position, agent.world.reward_size, fc = 'g')
 	ax1.add_patch(c)
+
+	subplot2grid((3,3),(1,0), colspan = 1)	
+	imshow(trace, interpolation='nearest')
+	title("trace")
+
+	subplot2grid((3,3),(2,0), colspan = 1)
+	imshow(W, interpolation = 'nearest')
+	title("Weight")
 
 	subplot2grid((3,3),(0,1), colspan = 1)
 	scatter(agent.model.experts['p'].pc_position[:,0], agent.model.experts['p'].pc_position[:,1], marker = '+', s = 150, c = agent.model.experts['p'].pc, cmap = cm.coolwarm)
@@ -148,5 +169,7 @@ def PLOT_TEST():
 
 	show()
 	
+	
+
 
 learn()

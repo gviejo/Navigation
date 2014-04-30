@@ -1,5 +1,6 @@
-#!/usr/bin/python
-# encoding: utf-8
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """
 Models.py    
 
@@ -7,9 +8,7 @@ Copyright (c) 2013 Guillaume VIEJO. All rights reserved.
 """
 
 from itertools import izip
-import pyximport
-pyximport.install()
-from Expert import Taxon, Planning, Expert
+from Expert import *
 import numpy as np
 
 class Model(object):
@@ -43,10 +42,10 @@ class Dolle(Model):
 		self.n_lc = self.parameters['nlc'] # NUmber of landmarks cells		
 		self.n_nodes = 0 # Number of nodes | not constant
 		self.actions = dict.fromkeys(self.k_ex) # Proposed action from each expert
-		self.action_angle = None
-		self.action_distance = None
-		self.g = [0.0]*self.n_ex # Gate value
-		self.g_max = [] # Maximum value
+		self.action_angle = 0.0
+		self.action_distance = 0.0
+		self.g = np.zeros(self.n_ex) # Gate Value
+		self.g_max = 0.0 # Maximum value
 		self.winner = None # Winner expert 
 		self.w_nodes = dict() 
 		self.w_lc = dict()
@@ -70,20 +69,12 @@ class Dolle(Model):
 				self.w_nodes[e].update(izip(new_nodes,np.random.uniform(0,0.01,size=len(new_nodes))))			
 				self.trace_nodes[e].update(izip(new_nodes,np.zeros(len(new_nodes))))
 
-	def computeGateValue(self):
-		# TO REMOVE
-		g = dict({'t':1.0, 'p':1.0, 'e':0.25})
-		tmp = np.array([g[k] for k in self.k_ex])
-		tmp = tmp/tmp.sum()
-		ind = np.sum(tmp.cumsum()<np.random.rand())
-		self.g = np.zeros(self.n_ex)
-		self.g[ind] = 1.0
-		###
-		# tmp2 = 0.0
-		# for i in xrange(self.n_ex):			
-		# 	tmp1 = np.array([self.experts['p'].nodes[j]*self.w_nodes[self.k_ex[i]][j] for j in self.w_nodes[self.k_ex[i]].keys()])			
-		# 	if 't' in self.k_ex: tmp2 = np.dot(self.w_lc[self.k_ex[i]], self.experts['t'].lc)
-		# 	self.g[i] = tmp2+np.sum(tmp1)
+	def computeGateValue(self):		
+		tmp2 = 0.0
+		for i in xrange(self.n_ex):			
+			tmp1 = np.array([self.experts['p'].nodes[j]*self.w_nodes[self.k_ex[i]][j] for j in self.w_nodes[self.k_ex[i]].keys()])			
+			if 't' in self.k_ex: tmp2 = np.dot(self.w_lc[self.k_ex[i]], self.experts['t'].lc)
+			self.g[i] = tmp2+np.sum(tmp1)
 
 	def retrieveAction(self):
 		super(Dolle, self).retrieveAction()
@@ -95,27 +86,28 @@ class Dolle(Model):
 		self.retrieveAction()
 		# CHOOSE EXPERTS						
 		self.winner = self.k_ex[np.argmax(self.g)]
-		self.g_max.append(np.max(self.g))
+		self.g_max = np.max(self.g)
 		self.action_angle, self.action_distance = self.actions[self.winner]		
-
-		#self.updateTrace()
-		return self.action_angle, self.action_distance
+		self.updateTrace()
+		return (self.action_angle, self.action_distance)
 
 	def updateTrace(self):
 		for e in self.k_ex:
-			self.trace_lc[e]=self.parameters['lambda']*self.trace_lc[e]+self.psi(self.action_angle-self.actions[e][0])*self.experts['t'].lc
-			for i in self.trace_nodes[e].iterkeys():
-				self.trace_nodes[e][i]=l*self.trace_nodes[e][i]+self.experts['p'].nodes[i]*self.psi(self.action_angle-self.actions[e])
+			if 't' in self.k_ex:
+				self.trace_lc[e]=self.parameters['lambda']*self.trace_lc[e]+self.psi(self.action_angle-self.actions[e][0])*self.experts['t'].lc
+			if 'p' in self.k_ex:
+				for i in self.trace_nodes[e].iterkeys():
+					self.trace_nodes[e][i]=self.parameters['lambda']*self.trace_nodes[e][i]+self.experts['p'].nodes[i]*self.psi(self.action_angle-self.actions[e][0])
 
 	def learn(self, reward):
 		for e in self.k_ex:
 			self.experts[e].learn(self.action_angle, reward)
-		# delta = float(reward)+self.parameters['gamma']*np.max(self.g.keys())-self.g_max[-1]
-		# tmp = delta*self.parameters['epsilon']
-		# for e in self.k_ex:
-		# 	self.w_lc[e] = self.w_lc[e] + tmp*self.trace_lc[e]
-		# 	for i in self.w_nodes[e].iterkeys():
-		# 		self.w_nodes[e][i] = self.w_nodes[e][i] + tmp*self.trace_nodes[e][i]
+		delta = float(reward)+self.parameters['gamma']*np.max(self.g)-self.g_max
+		tmp = delta*self.parameters['epsilon']
+		for e in self.k_ex:
+			self.w_lc[e] = self.w_lc[e] + tmp*self.trace_lc[e]
+			for i in self.w_nodes[e].iterkeys():
+				self.w_nodes[e][i] = self.w_nodes[e][i] + tmp*self.trace_nodes[e][i]
 
 		
 		

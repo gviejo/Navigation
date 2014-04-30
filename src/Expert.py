@@ -1,5 +1,6 @@
-#!/usr/bin/python
-# encoding: utf-8
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """
 Expert.py
 
@@ -56,21 +57,13 @@ class Taxon(Expert):
 		self.ac_direction = np.arange(-np.pi, np.pi, (2*np.pi)/float(self.parameters['nac']))
 		self.ac = np.zeros((self.parameters['nac']))
 		# Connection
-		self.W = np.random.normal(0.0, 0.9, size=(self.parameters['nac'], self.parameters['nlc']))
+		self.W = np.random.normal(0.0, 0.1, size=(self.parameters['nac'], self.parameters['nlc']))
 		# Proposed direction		
 		self.action = 0.0 # The proposed direction
 		self.norm = 0.0 # The distance if action is choosen
 		# Learning initialization		
 		self.delta = 0.0
 		self.trace = np.zeros((self.parameters['nac'], self.parameters['nlc']))
-		# TO REMOVE AFTER
-		self.lcs = list()
-		self.ldirec = list()
-		self.lac = list()
-		self.lvc = list()
-		self.ldelta = list()
-		self.ltrace = list()
-		self.lW = list()
 
 	def setCellInput(self, direction, distance, position, wall, agent_direction = 0):
 		""" Direction should be in [-pi, pi] interval 
@@ -80,11 +73,6 @@ class Taxon(Expert):
 		delta = np.arccos(np.cos(wall[0])*np.cos(self.vc_direction)+np.sin(wall[0])*np.sin(self.vc_direction))
 		self.vc = np.exp(-(np.power(delta, 2))/(2*(self.parameters['sigma_vc']/float(wall[1]-0.0001))**2))
 		self.computeActionActivity()		
-		## TO REMOVE
-		self.lcs.append(self.lc)
-		self.ldirec.append(self.action)
-		self.lvc.append(self.vc)
-		############
 
 	def computeActionActivity(self):		
 		self.ac = np.dot(self.W, self.lc) - self.vc
@@ -93,28 +81,19 @@ class Taxon(Expert):
 		self.action = np.arctan2(xy[0], xy[1])
 		self.norm = np.sqrt(np.sum(np.power(xy, 2)))
 		self.norm = self.parameters['speed']/(1.+np.exp(-self.norm))			
-		## TO REMOVE
-		self.lac.append(self.ac)
-		##############
 
 	def updateTrace(self, action):
 		delta = np.arccos(np.cos(action)*np.cos(self.ac_direction)+np.sin(action)*np.sin(self.ac_direction))		
 		ac = np.exp(-(np.power(delta,2))/(2*self.parameters['sigma']**2))		
 		self.trace = self.parameters['lambda']*self.trace+np.outer(ac, self.lc)
-		#### TO REMOVE
-		self.ltrace.append(self.trace)
-		#############
 
 	def learn(self, action, reward):
 		""" Action performed selected from a mixture of experts"""
 		super(Taxon, self).learn(action, reward)
 		self.updateTrace(action)
-		self.delta = reward + self.parameters['gamma']*self.ac.max()-self.ac		
+		self.delta = reward + self.parameters['gamma']*self.ac.max()-action
 		self.W = self.W+self.parameters['eta']*(np.tile(self.delta, (self.parameters['nlc'],1))).T*self.trace
-		####TO REMOVE
-		self.ldelta.append(self.delta)
-		self.lW.append(self.W)
-		################
+
 
 	def computeNextAction(self):
 		""" Called by general model for choosing action
@@ -153,6 +132,7 @@ class Planning(Expert):
 		self.action = 0.0
 
 	def setCellInput(self, direction, distance, position, wall, agent_direction = 0):
+		""" Only position is used """
 		if np.max(position)>1.0 or np.min(position)<-1.0: raise Warning("Place cells position should be normalized between [-1,1]")
 		self.direction = agent_direction
 		self.position = position
@@ -160,7 +140,8 @@ class Planning(Expert):
 		self.pc = np.exp(-distance/(2*self.parameters['sigma_pc']**2))
 		self.computeGraphNodeActivity()	
 
-	def computeGraphNodeActivity(self):			
+	def computeGraphNodeActivity(self):
+		""" Dot product of place cells activity and pc-> nodes links """
 		for i in self.nodes.iterkeys(): self.nodes[i] = np.dot(self.pc[self.pc_nodes[i].keys()],self.pc_nodes[i].values())
 		if len(self.nodes.keys()) == 0 or np.max(self.nodes.values()) < self.parameters['theta_node']:
 			self.createNewNode()
@@ -170,8 +151,8 @@ class Planning(Expert):
 			self.current_node = np.argmax(self.nodes.values())+1
 
 	def createNewNode(self):
-		# Store a list of place cells indice
-		# Each indice indicates the position of the place field in the environment
+		""" Store a list of place cells indice
+		 Each indice indicates the position of the place field in the environment """
 		self.nb_nodes+=1
 		ind = np.where(self.pc>self.parameters['theta_pc'])[0]		# The indices to the place cells
 		self.pc_nodes[self.nb_nodes]  = dict(izip(ind, self.pc[ind]))   	# key : PC ind | values : PC activity
@@ -183,6 +164,9 @@ class Planning(Expert):
 		self.current_node = self.nb_nodes
 
 	def createGoalNode(self):
+		""" Called only if reward is explicitly found.
+		ALlow to set a goal node over a specific place
+		Also propagate values"""
 		self.nb_nodes+=1
 		ind = np.argmax(self.pc)
 		self.pc_nodes[self.nb_nodes] = dict({ind:self.pc[ind]})
@@ -204,12 +188,17 @@ class Planning(Expert):
 		self.current_node = new_node		
 
 	def learn(self, action, reward):
+		""" Only if reward not found """
 		super(Planning, self).learn(action, reward)		
-		if reward and not self.goal_found:
+		if self.goal_found:
+			for x in self.edges[self.goal_node]:
+				self.propagate(x, [self.goal_node], self.parameters['alpha'])
+		elif reward > 0.0 and not self.goal_found:
 			self.goal_found = True			
 			self.createGoalNode()			
 
 	def propagate(self, new_node, visited, value):
+		""" Propagate discounted value starting from goal node"""
 		if self.values[new_node]<value: self.values[new_node] = value
 		visited.append(new_node)				
 		next_node = list(set(self.edges[new_node])-set(visited))
@@ -217,10 +206,9 @@ class Planning(Expert):
 		 	map(lambda x: self.propagate(x, visited, self.parameters['alpha']*value), next_node)		
 
 	def computeNextAction(self):
+		""" Return tuple (direction, speed) """
 		super(Planning, self).computeNextAction()		
 		if self.goal_found:
-			#self.current_node = np.argmax(self.nodes.values())+1
-			#self.goal_node = np.argmax(self.values.values())+1
 			if self.current_node == self.goal_node: 
 			 	return (0.0, 0.0)
 			else:

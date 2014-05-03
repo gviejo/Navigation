@@ -18,8 +18,13 @@ from cModels import *
 
 class Agent(object):
 
+<<<<<<< Updated upstream
 	def __init__(self, model, world, parameters, stats = "train"):
 		self.model = model
+=======
+	def __init__(self, experts, world, parameters, stats = "train"):
+		self.model = Dolle(experts, parameters)
+>>>>>>> Stashed changes
 		self.world = world
 		self.parameters = parameters
 		self.model.setAllParameters(self.parameters)		
@@ -156,8 +161,8 @@ class World(object):
 class Maze(World):
 
 	def __init__(self):
-		self.landmark_position = np.array([0.5, 0.5])
-		self.reward_position = np.array([-0.5, 0.5])
+		self.landmark_position = np.array([0.0, -0.5])
+		self.reward_position = np.array([-0.0, 0.5])
 		self.reward_size = 0.15
 		tmp = np.arange(0, 2*np.pi, 0.1)
 		self.reward_circle = np.vstack((np.cos(tmp), np.sin(tmp))).T * self.reward_size + self.reward_position
@@ -166,8 +171,8 @@ class Maze(World):
 		self.distance = np.sqrt(np.sum(np.power(self.start_position-self.reward_position, 2)))
 		self.reward_found = False
 		# Wall
-		self.walls = dict({1:np.array([[-1.0,0.0],[-0.4,0.0]]),
-						   2:np.array([[0.4,0.0],[1.0,0.0]])})
+		self.walls = dict({1:np.array([[-1.0,0.0],[-0.3,0.0]]),
+						   2:np.array([[0.3,0.0],[1.0,0.0]])})
 
 	def checkPosition(self, old_position, new_position):
 		super(Maze, self).checkPosition(old_position, new_position)
@@ -187,7 +192,7 @@ class Maze(World):
 		""" intersection between line A and B
 		A1 and A2 are two points in line A
 		Return None if parallel lines
-		Return (Cx, Cy) intersection coordinates
+			Return (Cx, Cy) intersection coordinates
 		"""
 		if (A1[0]-A2[0])*(B1[1]-B2[1]) - (A1[1]-A2[1])*(B1[0]-B2[0]) == 0:
 			return False

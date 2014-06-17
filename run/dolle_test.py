@@ -4,8 +4,6 @@
 """
 dolle.py
 
-    
-
 Copyright (c) 2014 Guillaume VIEJO. All rights reserved.
 """
 import sys

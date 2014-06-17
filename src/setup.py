@@ -105,6 +105,23 @@ class Agent(object):
 			self.actions.append(list([self.action_angle, self.action_speed]))
 			self.pgates.append(np.exp(self.model.g)/(np.exp(self.model.g).sum()))
 
+class Pearce(object):
+
+	def __init__(self):
+		self.water_maze_size = 200.0 #cm
+		self.rats_size = 15.0 #cm
+		self.landmark_size = 15.0 #cm
+		self.reward_size = 10.0 #cm
+		self.rew_to_land = 20.0 #cm
+		self.reward_position
+		tmp = np.arange(0, 2*np.pi, 0.1)
+		self.pool_circle = np.vstack([np.cos(tmp), np.sin(tmp)]).T * self.water_maze_size
+		self.reward_circle = np.vstack([np.cos(tmp), np.sin(tmp)]).T * self.reward_size + self.reward_position
+
+
+	def getReward(self, position):
+
+
 
 class World(object):
 

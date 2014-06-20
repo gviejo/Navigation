@@ -33,9 +33,9 @@ class Dolle(Model):
 							'lambda': 0.76,
 							'nlc':100 }		
 		self.setAllParameters(parameters)
-		self.experts = {'t':Taxon(), 
-						'p':Planning(),
-						'e':Expert()}
+		self.experts = {'t':Taxon(parameters), 
+						'p':Planning(parameters),
+						'e':Expert(parameters)}
 		self.experts = dict(filter(lambda i:i[0] in experts, self.experts.iteritems())) # Which expert to keep								
 		self.n_ex = len(self.experts.keys()) # Number of experts
 		self.k_ex = self.experts.keys() # Keys of experts | faster to declare here
@@ -52,20 +52,28 @@ class Dolle(Model):
 		self.trace_lc = dict()
 		self.trace_nodes = dict()		
 		self.psi = lambda x: np.exp(-x**2.)-np.exp(-np.pi/2.)
-		for k in self.k_ex:
-			self.experts[k].setAllParameters(self.parameters)
+		for k in self.k_ex:			
 			self.w_nodes[k] = dict()  # Empty dict for weight between nodes and gate
 			self.w_lc[k] = np.random.uniform(0,0.01, size = (1,self.n_lc)) # array of w for lc and gate
 			self.trace_lc[k] = np.zeros((1,self.n_lc))
 			self.trace_nodes[k] = dict()		
 
-	def setPosition(self, direction, distance, position, wall, agent_direction = 0):	
+	def reset(self):
+		""" Reset the model and all experts for new sessions"""		
+		for k in self.k_ex:
+			self.experts[k].reset()
+			self.w_nodes[k] = dict()  # Empty dict for weight between nodes and gate
+			self.w_lc[k] = np.random.uniform(0,0.01, size = (1,self.n_lc)) # array of w for lc and gate
+			self.trace_lc[k] = np.zeros((1,self.n_lc))
+			self.trace_nodes[k] = dict()		
+
+	def setPosition(self, direction, distance, position, wall, agent_direction = 0):		
 		for k in self.k_ex:
 			self.experts[k].setCellInput(direction, distance, position, wall, agent_direction)
 		if 'p' in self.k_ex and self.n_nodes != len(self.experts['p'].nodes.keys()):
 			self.n_nodes = len(self.experts['p'].nodes.keys())
 			new_nodes = set(self.experts['p'].nodes.keys())-set(self.w_nodes.keys())
-			for e in self.k_ex: 
+			for e in self.k_ex:
 				self.w_nodes[e].update(izip(new_nodes,np.random.uniform(0,0.01,size=len(new_nodes))))			
 				self.trace_nodes[e].update(izip(new_nodes,np.zeros(len(new_nodes))))
 

@@ -35,7 +35,7 @@ parameters = {  'nlc': 100,		 		    # Number of landmarks cells
 
 name = {'p':'Planning','t':'Taxon','e':'Exploratory'}
 
-agent = Agent(('p','t','e'), parameters)
+agent = Agent(('p','t','e'), World(), parameters)
 
 def learn():
 	t1 = time()

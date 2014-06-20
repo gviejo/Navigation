@@ -19,8 +19,13 @@ from cModels import *
 class Agent(object):
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 	def __init__(self, model, world, parameters, stats = "train"):
 		self.model = model
+=======
+	def __init__(self, experts, world, parameters, stats = "train"):
+		self.model = Dolle(experts, parameters)
+>>>>>>> Stashed changes
 =======
 	def __init__(self, experts, world, parameters, stats = "train"):
 		self.model = Dolle(experts, parameters)
